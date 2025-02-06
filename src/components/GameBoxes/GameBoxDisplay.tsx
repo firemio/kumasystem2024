@@ -37,7 +37,11 @@ export function GameBoxDisplay({ box, isSelected, onSelect }: GameBoxDisplayProp
           )}
         </span>
       </div>
-      <ResultDisplay result={box.activeResult} isActive={box.isActive} />
+      <ResultDisplay 
+        result={box.activeResult} 
+        isActive={box.isActive} 
+        numbers={box.activeResult === 'Draw' && box.numbers ? [box.numbers[1]] : undefined}
+      />
       <NumberCircles 
         numbers={box.numbers} 
         colors={box.colors} 
