@@ -20,12 +20,12 @@ export function ResultDisplay({ result, isActive, numbers }: ResultDisplayProps)
             }
           `}
         >
-          {type}
           {type === 'Draw' && result === 'Draw' && isActive && numbers && (
-            <span className="absolute -right-5 text-xl text-yellow-400">
+            <span className="absolute left-1/2 -translate-x-1/2 -top-6 text-xl text-yellow-400">
               {numbers[0]}
             </span>
           )}
+          {type}
         </span>
       ))}
     </div>
