@@ -1,6 +1,6 @@
 import React from 'react';
 import { GameResult } from '../../types/gameBox';
-import { isFifthCardPlayer, isSixthCardPlayer } from '../../utils/baccarat';
+import { isFifthCardPlayer, isSixthCardPlayer, getUsedCardsCount } from '../../utils/baccarat';
 
 interface NumberCirclesProps {
   numbers: number[];
@@ -21,9 +21,11 @@ export function NumberCircles({ numbers = [], colors = [], result }: NumberCircl
     return null;
   };
 
+  const usedCards = getUsedCardsCount(numbers);
+
   return (
     <div className="flex flex-nowrap gap-1 justify-center">
-      {numbers.map((number, index) => (
+      {numbers.slice(0, usedCards).map((number, index) => (
         <div key={index} className="relative">
           {getRole(index) && (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] text-green-400">

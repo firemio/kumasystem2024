@@ -4,6 +4,7 @@ import { ResultDisplay } from './ResultDisplay';
 import { NumberCircles } from './NumberCircles';
 import { checkColorMismatch } from '../../utils/colorUtils';
 import { AlertTriangle } from 'lucide-react';
+import { getFinalHandValues } from '../../utils/baccarat/gameEvaluator';
 
 interface GameBoxDisplayProps {
   box: GameBox;
@@ -13,6 +14,8 @@ interface GameBoxDisplayProps {
 
 export function GameBoxDisplay({ box, isSelected, onSelect }: GameBoxDisplayProps) {
   const hasMismatch = checkColorMismatch(box.numbers, box.colors, box.id);
+  const finalValues = box.activeResult === 'Draw' && box.numbers ? getFinalHandValues(box.numbers) : null;
+  const drawValue = finalValues ? finalValues.playerFinal : undefined; // Draw時は必ずプレイヤーとバンカーの値は同じ
 
   return (
     <div
@@ -40,7 +43,7 @@ export function GameBoxDisplay({ box, isSelected, onSelect }: GameBoxDisplayProp
       <ResultDisplay 
         result={box.activeResult} 
         isActive={box.isActive} 
-        numbers={box.activeResult === 'Draw' && box.numbers ? [box.numbers[1]] : undefined}
+        numbers={drawValue !== undefined ? [drawValue] : undefined}
       />
       <NumberCircles 
         numbers={box.numbers} 

@@ -11,11 +11,12 @@ function getRequiredCardsCount(numbers: number[]): number {
   const playerInitial = calculateHandValue([numbers[0], numbers[2]]);
   const bankerInitial = calculateHandValue([numbers[1], numbers[3]]);
 
-  // Natural 8 or 9
+  // Natural 8 or 9 - always use exactly 4 cards
   if (isNatural(playerInitial) || isNatural(bankerInitial)) {
     return 4;
   }
 
+  // Only proceed with drawing rules if no naturals
   // Check player draw
   if (shouldPlayerDraw(playerInitial)) {
     // Player will draw
@@ -69,6 +70,43 @@ export function calculateBaccaratResult(numbers: number[]): GameResult | null {
   if (playerFinal > bankerFinal) return 'Player';
   if (bankerFinal > playerFinal) return 'Banker';
   return 'Draw';
+}
+
+/**
+ * Gets the final hand values
+ */
+export function getFinalHandValues(numbers: number[]): { playerFinal: number, bankerFinal: number } | null {
+  if (!numbers || numbers.length < 4) return null;
+
+  const requiredCards = getRequiredCardsCount(numbers);
+  if (numbers.length < requiredCards) return null;
+
+  // Initial hands
+  const playerInitial = calculateHandValue([numbers[0], numbers[2]]);
+  const bankerInitial = calculateHandValue([numbers[1], numbers[3]]);
+
+  // Check naturals
+  if (isNatural(playerInitial) || isNatural(bankerInitial)) {
+    return { playerFinal: playerInitial, bankerFinal: bankerInitial };
+  }
+
+  let playerFinal = playerInitial;
+  let bankerFinal = bankerInitial;
+
+  // Player draws first if needed
+  if (shouldPlayerDraw(playerInitial) && numbers.length >= 5) {
+    playerFinal = calculateHandValue([numbers[0], numbers[2], numbers[4]]);
+    
+    // Banker decision based on player's third card
+    if (shouldBankerDraw(bankerInitial, numbers[4]) && numbers.length >= 6) {
+      bankerFinal = calculateHandValue([numbers[1], numbers[3], numbers[5]]);
+    }
+  } else if (shouldBankerDraw(bankerInitial) && numbers.length >= 5) {
+    // Player stands, banker might draw
+    bankerFinal = calculateHandValue([numbers[1], numbers[3], numbers[4]]);
+  }
+
+  return { playerFinal, bankerFinal };
 }
 
 /**
