@@ -1,7 +1,7 @@
 import { BaccaratHand, BaccaratGame } from '../types';
 import { calculateHandValue } from './handValue';
 import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
-import { NATURAL_MIN } from './constants';
+import { NATURAL_THRESHOLD } from './constants';
 import { determineWinner } from './gameResult';
 import { getRequiredCardsCount } from './gameLogic';
 

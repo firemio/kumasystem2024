@@ -54,15 +54,11 @@ export function GameBoxesContainer({
   useEffect(() => {
     if (!referencePoint) return;
     
-    const updatedBoxes = GAME_BOXES.map(box => ({
-      ...box,
-      numbers: [],
-      colors: [],
-      activeResult: null,
-      isActive: false,
-    })).map(box => 
-      updateGameBox(box, grid, referencePoint)
-    );
+    const updatedBoxes = GAME_BOXES.map(box => updateGameBox(
+      { ...box, numbers: [], colors: [], activeResult: null, isActive: false },
+      grid,
+      referencePoint
+    ));
 
     setGameBoxes(updatedBoxes);
   }, [grid, referencePoint, gameNumber]);

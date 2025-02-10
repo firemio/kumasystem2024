@@ -475,7 +475,13 @@ export function GameBoxesContainer({
   useEffect(() => {
     if (!referencePoint) return;
     
-    const updatedBoxes = GAME_BOXES.map(box => 
+    const updatedBoxes = GAME_BOXES.map(box => ({
+      ...box,
+      numbers: [],
+      colors: [],
+      activeResult: null,
+      isActive: false,
+    })).map(box => 
       updateGameBox(box, grid, referencePoint)
     );
 
@@ -500,7 +506,7 @@ export function GameBoxesContainer({
   };
 
   // 基準点の色情報を取得
-  const referenceColor = referencePoint && grid[referencePoint.y][referencePoint.x].isRed;
+  const referenceColor = referencePoint ? grid[referencePoint.y][referencePoint.x].isRed : undefined;
 
   return (
     <div className="mt-4 space-y-2">
@@ -899,6 +905,8 @@ import { Position, GridData, ColorMode, GameStatus } from '../types';
 import { insertCharacter, deleteCharacter } from '../utils/inputUtils';
 import { moveCursor } from '../utils/cursorUtils';
 import { adjustCursorIfNeeded } from './inputHelpers';
+import { findLastNonEmptyPosition } from '../utils/gridUtils';
+import { GRID_COLS } from '../constants/grid';
 
 export function handleNumberPress(
   num: string,
@@ -2025,13 +2033,13 @@ export function determineWinner(playerValue: number, bankerValue: number): GameR
 
 #### src\utils\baccarat\core\gameState.ts begin
 import { BaccaratHand, BaccaratGame } from '../types';
-import { calculateHandValue, isNatural } from './handValue';
+import { calculateHandValue } from './handValue';
 import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
-import { NATURAL_MIN } from '../constants';
+import { NATURAL_MIN } from './constants';
 import { determineWinner } from './gameResult';
 import { getRequiredCardsCount } from './gameLogic';
 
-function isNatural(value: number): boolean {
+function isNaturalValue(value: number): boolean {
   return value >= NATURAL_MIN;
 }
 
@@ -2057,7 +2065,7 @@ export function evaluateGame(numbers: number[]): BaccaratGame | null {
   };
 
   // Check for naturals
-  if (isNatural(player.value) || isNatural(banker.value)) {
+  if (isNaturalValue(player.value) || isNaturalValue(banker.value)) {
     return {
       player,
       banker,
