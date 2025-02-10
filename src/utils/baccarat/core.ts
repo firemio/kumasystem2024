@@ -1,6 +1,6 @@
-import { GameResult } from '../../types/gameBox';
+import { GameResult } from './types';
 import { calculateHandValue, isNatural } from './handValue';
-import { shouldPlayerDraw, shouldBankerDraw } from './drawRules';
+import { shouldPlayerDraw, shouldBankerDraw } from './drawingRules';
 
 /**
  * Calculates required number of cards based on game state

@@ -14,11 +14,8 @@ export {
 } from './core/cardPosition';
 
 export {
-  shouldPlayerDraw
-} from './rules/playerRules';
-
-export {
+  shouldPlayerDraw,
   shouldBankerDraw
-} from './rules/bankerRules';
+} from './drawingRules';
 
-export type { GameResult } from '../../types/gameBox';
+export type { GameResult } from './types';

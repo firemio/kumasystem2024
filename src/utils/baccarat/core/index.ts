@@ -1,7 +1,6 @@
-import { GameResult } from '../../../types/gameBox';
+import { GameResult } from '../types';
 import { calculateHandValue } from './handValue';
-import { shouldPlayerDraw } from '../rules/playerRules';
-import { shouldBankerDraw } from '../rules/bankerRules';
+import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
 
 function getRequiredCardsCount(numbers: number[]): number {
   if (!numbers || numbers.length < 4) return 0;
@@ -59,5 +58,4 @@ export function getUsedCardsCount(numbers: number[]): number {
 }
 
 export { calculateHandValue } from './handValue';
-export { shouldPlayerDraw } from '../rules/playerRules';
-export { shouldBankerDraw } from '../rules/bankerRules';
+export { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';

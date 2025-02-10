@@ -1,7 +1,6 @@
-import { GameResult } from '../../../types/gameBox';
+import { GameResult } from '../types';
 import { calculateHandValue, isNatural } from './handValue';
-import { shouldPlayerDraw } from '../rules/playerRules';
-import { shouldBankerDraw } from '../rules/bankerRules';
+import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
 
 function getRequiredCardsCount(numbers: number[]): number {
   if (!numbers || numbers.length < 4) return 0;

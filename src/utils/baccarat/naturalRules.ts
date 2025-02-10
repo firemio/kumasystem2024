@@ -1,4 +1,4 @@
-import { calculateHandValue } from './cardValue';
+import { calculateHandValue } from './handValue';
 
 export const NATURAL_THRESHOLD = 8;
 

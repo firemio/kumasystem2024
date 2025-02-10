@@ -1,12 +1,11 @@
 import { BaccaratHand, BaccaratGame } from '../types';
 import { calculateHandValue } from './handValue';
-import { shouldPlayerDraw } from '../rules/playerRules';
-import { shouldBankerDraw } from '../rules/bankerRules';
-import { NATURAL_THRESHOLD } from '../constants';
+import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
+import { NATURAL_MIN } from '../constants';
 import { determineWinner } from './gameResult';
 
 function hasNatural(value: number): boolean {
-  return value >= NATURAL_THRESHOLD;
+  return value >= NATURAL_MIN;
 }
 
 export function getRequiredCardsCount(numbers: number[]): number {
@@ -50,13 +49,13 @@ export function evaluateGame(numbers: number[]): BaccaratGame | null {
   const player: BaccaratHand = {
     initialCards: [processedNumbers[0], processedNumbers[2]],
     value: calculateHandValue([processedNumbers[0], processedNumbers[2]]),
-    thirdCard: null
+    thirdCard: undefined
   };
 
   const banker: BaccaratHand = {
     initialCards: [processedNumbers[1], processedNumbers[3]],
     value: calculateHandValue([processedNumbers[1], processedNumbers[3]]),
-    thirdCard: null
+    thirdCard: undefined
   };
 
   // Check for naturals
