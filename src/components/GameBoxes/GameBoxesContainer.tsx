@@ -15,6 +15,24 @@ interface GameBoxesContainerProps {
   setSelectedBox: (box: string | null) => void;
 }
 
+// ゲームボックスの更新ロジックを分離
+function updateGameBox(
+  box: GameBox,
+  grid: GridData,
+  referencePoint: Position
+): GameBox {
+  const [numbers, colors] = getNumbersFromGrid(grid, referencePoint, box.id);
+  const result = numbers.length >= 4 ? calculateBaccaratResult(numbers) : null;
+  
+  return {
+    ...box,
+    numbers,
+    colors,
+    activeResult: result,
+    isActive: numbers.length >= 4,
+  };
+}
+
 export function GameBoxesContainer({ 
   grid, 
   referencePoint,
@@ -35,20 +53,11 @@ export function GameBoxesContainer({
 
   useEffect(() => {
     if (!referencePoint) return;
+    
+    const updatedBoxes = GAME_BOXES.map(box => 
+      updateGameBox(box, grid, referencePoint)
+    );
 
-    const updatedBoxes = GAME_BOXES.map(box => {
-      const [numbers, colors] = getNumbersFromGrid(grid, referencePoint, box.id);
-      const result = numbers.length >= 4 ? calculateBaccaratResult(numbers) : null;
-      const usedCards = result ? getUsedCardsCount(numbers) : 0;
-      
-      return {
-        ...box,
-        numbers,
-        colors,
-        activeResult: result,
-        isActive: numbers.length >= 4,
-      };
-    });
     setGameBoxes(updatedBoxes);
   }, [grid, referencePoint, gameNumber]);
 

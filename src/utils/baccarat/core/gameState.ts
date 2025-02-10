@@ -1,40 +1,12 @@
 import { BaccaratHand, BaccaratGame } from '../types';
-import { calculateHandValue } from './handValue';
+import { calculateHandValue, isNatural } from './handValue';
 import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
 import { NATURAL_MIN } from '../constants';
 import { determineWinner } from './gameResult';
+import { getRequiredCardsCount } from './gameLogic';
 
-function hasNatural(value: number): boolean {
+function isNatural(value: number): boolean {
   return value >= NATURAL_MIN;
-}
-
-export function getRequiredCardsCount(numbers: number[]): number {
-  if (!numbers || numbers.length < 4) return 0;
-
-  // Convert P (represented as 0) to actual 0 for calculations
-  const processedNumbers = numbers.map(n => n === 0 ? 0 : n);
-
-  const playerValue = calculateHandValue([processedNumbers[0], processedNumbers[2]]);
-  const bankerValue = calculateHandValue([processedNumbers[1], processedNumbers[3]]);
-
-  // Natural 8 or 9
-  if (hasNatural(playerValue) || hasNatural(bankerValue)) {
-    return 4;
-  }
-
-  // Check if player needs third card
-  const playerDraws = shouldPlayerDraw(playerValue);
-  if (!playerDraws) {
-    // Player stands - check if banker draws based on fixed rule
-    return shouldBankerDraw(bankerValue, undefined) ? 6 : 4;
-  }
-
-  // Player will draw, need at least 5 cards
-  if (processedNumbers.length < 5) return 5;
-
-  // Check if banker needs third card based on player's third card
-  const playerThirdCard = processedNumbers[4];
-  return shouldBankerDraw(bankerValue, playerThirdCard) ? 6 : 5;
 }
 
 export function evaluateGame(numbers: number[]): BaccaratGame | null {
@@ -59,7 +31,7 @@ export function evaluateGame(numbers: number[]): BaccaratGame | null {
   };
 
   // Check for naturals
-  if (hasNatural(player.value) || hasNatural(banker.value)) {
+  if (isNatural(player.value) || isNatural(banker.value)) {
     return {
       player,
       banker,
@@ -67,16 +39,19 @@ export function evaluateGame(numbers: number[]): BaccaratGame | null {
     };
   }
 
-  // Player draws first if needed
+  // Handle player's third card
   if (shouldPlayerDraw(player.value) && processedNumbers.length >= 5) {
     player.thirdCard = processedNumbers[4];
     player.value = calculateHandValue([...player.initialCards, player.thirdCard]);
   }
 
-  // Banker draws if needed
-  if (processedNumbers.length >= 6 && shouldBankerDraw(banker.value, player.thirdCard)) {
-    banker.thirdCard = processedNumbers[5];
-    banker.value = calculateHandValue([...banker.initialCards, banker.thirdCard]);
+  // Handle banker's third card
+  if (shouldBankerDraw(banker.value, player.thirdCard)) {
+    const bankerThirdCardIndex = player.thirdCard ? 5 : 4;
+    if (processedNumbers.length > bankerThirdCardIndex) {
+      banker.thirdCard = processedNumbers[bankerThirdCardIndex];
+      banker.value = calculateHandValue([...banker.initialCards, banker.thirdCard]);
+    }
   }
 
   return {

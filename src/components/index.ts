@@ -8,7 +8,7 @@ export { CardCounter } from './CardCounter';
 export { ColorModeIndicator } from './ColorModeIndicator';
 export { Header } from './Header';
 export { Instructions } from './Instructions';
-export { NumpadToggle } from './NumpadToggle';
+export { NumpadToggle } from './VirtualNumpad/NumpadToggle';
 export { ResetButton } from './ResetButton';
 export { StatusDisplay } from './StatusDisplay';
 export { VirtualNumpad } from './VirtualNumpad/VirtualNumpad';

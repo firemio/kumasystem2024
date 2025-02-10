@@ -40,32 +40,31 @@ export function shouldBankerDraw(
 export function getRequiredCardsCount(numbers: number[]): number {
   if (!numbers || numbers.length < 4) return 0;
 
-  const playerInitial = calculateHandValue([numbers[0], numbers[2]]);
-  const bankerInitial = calculateHandValue([numbers[1], numbers[3]]);
+  // Convert P (represented as 0) to actual 0 for calculations
+  const processedNumbers = numbers.map(n => n === 0 ? 0 : n);
 
-  // ナチュラルの場合は4枚で終了
-  if (isNatural(playerInitial) || isNatural(bankerInitial)) {
+  const playerValue = calculateHandValue([processedNumbers[0], processedNumbers[2]]);
+  const bankerValue = calculateHandValue([processedNumbers[1], processedNumbers[3]]);
+
+  // Natural 8 or 9
+  if (isNatural(playerValue) || isNatural(bankerValue)) {
     return 4;
   }
 
-  const needsPlayerThirdCard = shouldPlayerDraw(playerInitial);
-
-  // プレイヤーが引く場合
-  if (needsPlayerThirdCard) {
-    // プレイヤーの3枚目が必要
-    if (numbers.length < 5) {
-      return 5;
-    }
-    // バンカーが引く場合は6枚必要
-    if (shouldBankerDraw(bankerInitial, numbers[4])) {
+  // Check if player should draw
+  if (shouldPlayerDraw(playerValue)) {
+    if (shouldBankerDraw(bankerValue, processedNumbers[4])) {
       return 6;
     }
-    // バンカーが引かない場合は5枚
     return 5;
   }
 
-  // プレイヤーが引かない場合、バンカーが引くかどうかで5枚か4枚
-  return shouldBankerDraw(bankerInitial, undefined) ? 5 : 4;
+  // Check if banker should draw
+  if (shouldBankerDraw(bankerValue, undefined)) {
+    return 5;
+  }
+
+  return 4;
 }
 
 export function calculateBaccaratResult(numbers: number[]): GameResult | null {
