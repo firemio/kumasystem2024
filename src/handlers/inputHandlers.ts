@@ -2,6 +2,8 @@ import { Position, GridData, ColorMode, GameStatus } from '../types';
 import { insertCharacter, deleteCharacter } from '../utils/inputUtils';
 import { moveCursor } from '../utils/cursorUtils';
 import { adjustCursorIfNeeded } from './inputHelpers';
+import { findLastNonEmptyPosition } from '../utils/gridUtils';
+import { GRID_COLS } from '../constants/grid';
 
 export function handleNumberPress(
   num: string,

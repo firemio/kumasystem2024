@@ -54,7 +54,13 @@ export function GameBoxesContainer({
   useEffect(() => {
     if (!referencePoint) return;
     
-    const updatedBoxes = GAME_BOXES.map(box => 
+    const updatedBoxes = GAME_BOXES.map(box => ({
+      ...box,
+      numbers: [],
+      colors: [],
+      activeResult: null,
+      isActive: false,
+    })).map(box => 
       updateGameBox(box, grid, referencePoint)
     );
 
@@ -79,7 +85,7 @@ export function GameBoxesContainer({
   };
 
   // 基準点の色情報を取得
-  const referenceColor = referencePoint && grid[referencePoint.y][referencePoint.x].isRed;
+  const referenceColor = referencePoint ? grid[referencePoint.y][referencePoint.x].isRed : undefined;
 
   return (
     <div className="mt-4 space-y-2">

@@ -1,11 +1,11 @@
 import { BaccaratHand, BaccaratGame } from '../types';
-import { calculateHandValue, isNatural } from './handValue';
+import { calculateHandValue } from './handValue';
 import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
-import { NATURAL_MIN } from '../constants';
+import { NATURAL_MIN } from './constants';
 import { determineWinner } from './gameResult';
 import { getRequiredCardsCount } from './gameLogic';
 
-function isNatural(value: number): boolean {
+function isNaturalValue(value: number): boolean {
   return value >= NATURAL_MIN;
 }
 
@@ -31,7 +31,7 @@ export function evaluateGame(numbers: number[]): BaccaratGame | null {
   };
 
   // Check for naturals
-  if (isNatural(player.value) || isNatural(banker.value)) {
+  if (isNaturalValue(player.value) || isNaturalValue(banker.value)) {
     return {
       player,
       banker,
