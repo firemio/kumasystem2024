@@ -11,10 +11,11 @@ interface GameBoxDisplayProps {
   box: GameBox;
   isSelected: boolean;
   onSelect: () => void;
+  referenceColor?: boolean;
 }
 
-export function GameBoxDisplay({ box, isSelected, onSelect }: GameBoxDisplayProps) {
-  const hasMismatch = checkColorMismatch(box.numbers, box.colors, box.id);
+export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor }: GameBoxDisplayProps) {
+  const hasMismatch = checkColorMismatch(box.numbers, box.colors, box.id, referenceColor);
   const result = box.numbers ? calculateBaccaratResult(box.numbers) : null;
   const drawValue = result === 'Draw' && box.numbers ? calculateHandValue([box.numbers[0], box.numbers[2]]) : undefined;
 

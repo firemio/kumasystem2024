@@ -1,6 +1,11 @@
 import { GameBoxType } from '../types/gameBox';
 
-export function checkColorMismatch(numbers: number[], colors: boolean[], boxType: GameBoxType): boolean {
+export function checkColorMismatch(
+  numbers: number[],
+  colors: boolean[],
+  boxType: GameBoxType,
+  referenceColor?: boolean
+): boolean {
   if (numbers.length < 2) return false;
 
   switch (boxType) {
@@ -28,15 +33,10 @@ export function checkColorMismatch(numbers: number[], colors: boolean[], boxType
       }
       break;
     case 'F':
-      // Check first and second cards from the starting position
-      if (numbers.length >= 2) {
-        return colors[0] !== colors[1];
-      }
-      break;
     case 'G':
-      // Check first and third cards from the starting position
-      if (numbers.length >= 3) {
-        return colors[0] !== colors[2];
+      // F,Gは基準点と1枚目が同じ色かどうかで判定
+      if (numbers.length >= 1 && referenceColor !== undefined) {
+        return colors[0] !== referenceColor;
       }
       break;
   }

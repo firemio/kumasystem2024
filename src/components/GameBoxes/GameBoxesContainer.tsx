@@ -78,6 +78,9 @@ export function GameBoxesContainer({
     }
   };
 
+  // 基準点の色情報を取得
+  const referenceColor = referencePoint && grid[referencePoint.y][referencePoint.x].isRed;
+
   return (
     <div className="mt-4 space-y-2">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -87,6 +90,7 @@ export function GameBoxesContainer({
               box={box}
               isSelected={selectedBox === box.id}
               onSelect={() => handleBoxSelect(box.id)}
+              referenceColor={referenceColor}
             />
           </div>
         ))}
@@ -98,6 +102,7 @@ export function GameBoxesContainer({
               box={box}
               isSelected={selectedBox === box.id}
               onSelect={() => handleBoxSelect(box.id)}
+              referenceColor={referenceColor}
             />
           </div>
         ))}
