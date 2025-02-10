@@ -101,5 +101,11 @@ export function calculateBaccaratResult(numbers: number[]): GameResult | null {
 }
 
 export function getUsedCardsCount(numbers: number[]): number {
-  return getRequiredCardsCount(numbers);
+  const baseCount = getRequiredCardsCount(numbers);
+  
+  if (!numbers || numbers.length === 0) {
+    return baseCount;
+  }
+
+  return baseCount;
 }

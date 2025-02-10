@@ -65,7 +65,15 @@ export function GameBoxesContainer({
     setSelectedBox(boxId);
     const box = gameBoxes.find(b => b.id === boxId);
     if (box && onBoxSelect) {
-      const usedCards = box.numbers.length >= 4 ? getUsedCardsCount(box.numbers) : 0;
+      let usedCards = box.numbers.length >= 4 ? getUsedCardsCount(box.numbers) : 0;
+      
+      // FとGの場合は追加の移動量を加算
+      if (boxId === 'F') {
+        usedCards += 1;  // 通常の移動量+1（合計+2）
+      } else if (boxId === 'G') {
+        usedCards += 2;  // 通常の移動量+2（合計+3）
+      }
+      
       onBoxSelect(boxId, usedCards);
     }
   };
