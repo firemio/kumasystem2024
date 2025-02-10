@@ -5,11 +5,8 @@ export function checkColorMismatch(numbers: number[], colors: boolean[], boxType
 
   switch (boxType) {
     case 'A':
-      // Check if swapped cards have different colors
-      if (numbers.length >= 2) {
-        return colors[0] !== colors[1];
-      }
-      break;
+      // Aは色違い判定の対象外
+      return false;
     case 'B':
       if (numbers.length >= 2) {
         return colors[0] !== colors[1];
