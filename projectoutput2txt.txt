@@ -1,0 +1,2395 @@
+
+#### src\App.tsx begin
+import React, { useRef } from 'react';
+import { Toaster, toast } from 'react-hot-toast';
+import { Grid } from './components/Grid';
+import { Header } from './components/Header';
+import { StatusDisplay } from './components/StatusDisplay';
+import { GameBoxesContainer } from './components/GameBoxes';
+import { ResetButton } from './components/ResetButton';
+import { VirtualNumpad, NumpadToggle } from './components/VirtualNumpad';
+import { usePersistedState } from './hooks/usePersistedState';
+import { useGameState } from './hooks/useGameState';
+import { useKeyboardInput } from './hooks/useKeyboardInput';
+import { Position, GridData, ColorMode } from './types';
+import { GameBoxType } from './types/gameBox';
+import { INITIAL_GRID, DEFAULT_START_POSITION } from './constants/grid';
+import { countInputNumbers } from './utils/gridUtils';
+import * as handlers from './handlers/inputHandlers';
+
+export default function App() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [grid, setGrid] = usePersistedState<GridData>('baccarat-grid', INITIAL_GRID);
+  const [cursor, setCursor] = usePersistedState<Position>('baccarat-cursor', { x: DEFAULT_START_POSITION, y: 0 });
+  const [colorMode, setColorMode] = usePersistedState<ColorMode>('baccarat-color-mode', 'black');
+  const [isNumpadVisible, setIsNumpadVisible] = usePersistedState<boolean>('baccarat-numpad-visible', true);
+  
+  const {
+    position: referencePoint,
+    gameNumber,
+    selectedBox,
+    setSelectedBox,
+    updatePosition: setReferencePoint,
+    advanceGame,
+    reset: resetGameState
+  } = useGameState();
+
+  const { focus } = useKeyboardInput({
+    containerRef,
+    grid,
+    cursor,
+    setCursor,
+    setGrid,
+    setReferencePoint,
+    colorMode,
+    setColorMode,
+  });
+
+  const handleBoxSelect = (boxId: GameBoxType, usedCards: number) => {
+    if (referencePoint && usedCards > 0) {
+      advanceGame(usedCards);
+      toast.success(`${boxId}の結果を確認しました`, {
+        duration: 2000,
+        position: 'top-center',
+        className: 'bg-green-900 text-green-400 border border-green-500',
+      });
+    }
+  };
+
+  const handleReset = () => {
+    setGrid(INITIAL_GRID);
+    setCursor({ x: DEFAULT_START_POSITION, y: 0 });
+    setColorMode('black');
+    resetGameState();
+    setTimeout(focus, 0);
+  };
+
+  return (
+    <div className="min-h-screen bg-black p-2 sm:p-4 pb-80">
+      <Toaster />
+      <div 
+        ref={containerRef}
+        className="bg-black rounded-lg shadow-sm max-w-[98vw] mx-auto border border-green-500 relative outline-none"
+        tabIndex={0}
+      >
+        <ResetButton onReset={handleReset} />
+        <div className="p-2 sm:p-4">
+          <Header cardCount={countInputNumbers(grid)} colorMode={colorMode} />
+          <div className="border border-green-500 rounded">
+            <Grid
+              grid={grid}
+              cursor={cursor}
+              referencePoint={referencePoint}
+              onCellClick={(x, y) => handlers.handleCellClick(x, y, grid, setCursor)}
+            />
+          </div>
+          <StatusDisplay gameNumber={gameNumber} position={referencePoint} />
+          <GameBoxesContainer 
+            grid={grid}
+            referencePoint={referencePoint}
+            onBoxSelect={handleBoxSelect}
+            gameNumber={gameNumber}
+            selectedBox={selectedBox}
+            setSelectedBox={setSelectedBox}
+          />
+        </div>
+      </div>
+      <NumpadToggle 
+        isVisible={isNumpadVisible} 
+        onToggle={() => setIsNumpadVisible(prev => !prev)} 
+      />
+      <VirtualNumpad
+        onNumberPress={(num) => handlers.handleNumberPress(num, grid, cursor, colorMode, setGrid, setCursor)}
+        onArrowPress={(direction) => handlers.handleArrowPress(direction, cursor, setCursor)}
+        onDelete={() => handlers.handleDelete(grid, cursor, setGrid, setCursor)}
+        onBackspace={() => handlers.handleBackspace(grid, cursor, setGrid, setCursor)}
+        onEnter={() => setReferencePoint(cursor)}
+        onColorToggle={() => handlers.handleColorToggle(setColorMode)}
+        onSpecialChar={(char) => handlers.handleSpecialChar(char, grid, cursor, colorMode, setGrid, setCursor)}
+        colorMode={colorMode}
+        isVisible={isNumpadVisible}
+      />
+    </div>
+  );
+}
+#### src\App.tsx end
+
+
+
+#### src\main.tsx begin
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+#### src\main.tsx end
+
+
+
+#### src\vite-env.d.ts begin
+/// <reference types="vite/client" />
+
+#### src\vite-env.d.ts end
+
+
+
+#### src\components\CardCounter.tsx begin
+import React from 'react';
+
+interface CardCounterProps {
+  count: number;
+}
+
+export function CardCounter({ count }: CardCounterProps) {
+  return (
+    <span className="font-medium text-green-400">
+      カード入力情報 {count} 枚
+    </span>
+  );
+}
+#### src\components\CardCounter.tsx end
+
+
+
+#### src\components\ColorModeIndicator.tsx begin
+import React from 'react';
+import { ColorMode } from '../types';
+
+interface ColorModeIndicatorProps {
+  mode: ColorMode;
+}
+
+export function ColorModeIndicator({ mode }: ColorModeIndicatorProps) {
+  return (
+    <div className="relative group ml-4">
+      <span className={`font-medium ${mode === 'red' ? 'text-red-500' : 'text-green-400'}`}>
+        入力色: {mode === 'red' ? '赤' : '緑'}
+      </span>
+      <div className="absolute hidden group-hover:block top-full left-0 mt-1 p-2 bg-green-900 text-green-400 text-xs rounded shadow-lg whitespace-nowrap">
+        *キーで切替
+      </div>
+    </div>
+  );
+}
+#### src\components\ColorModeIndicator.tsx end
+
+
+
+#### src\components\Header.tsx begin
+import React from 'react';
+import { ColorMode } from '../types';
+import { CardCounter } from './CardCounter';
+import { ColorModeIndicator } from './ColorModeIndicator';
+
+interface HeaderProps {
+  cardCount: number;
+  colorMode: ColorMode;
+}
+
+export function Header({ cardCount, colorMode }: HeaderProps) {
+  return (
+    <div className="flex items-center text-sm mb-2 text-green-500">
+      <CardCounter count={cardCount} />
+      <ColorModeIndicator mode={colorMode} />
+    </div>
+  );
+}
+#### src\components\Header.tsx end
+
+
+
+#### src\components\index.ts begin
+export { Grid } from './Grid/Grid';
+export { GridCell } from './Grid/GridCell';
+export { GameBoxesContainer } from './GameBoxes/GameBoxesContainer';
+export { GameBoxDisplay } from './GameBoxes/GameBoxDisplay';
+export { NumberCircles } from './GameBoxes/NumberCircles';
+export { ResultDisplay } from './GameBoxes/ResultDisplay';
+export { CardCounter } from './CardCounter';
+export { ColorModeIndicator } from './ColorModeIndicator';
+export { Header } from './Header';
+export { Instructions } from './Instructions';
+export { NumpadToggle } from './VirtualNumpad/NumpadToggle';
+export { ResetButton } from './ResetButton';
+export { StatusDisplay } from './StatusDisplay';
+export { VirtualNumpad } from './VirtualNumpad/VirtualNumpad';
+
+#### src\components\index.ts end
+
+
+
+#### src\components\Instructions.tsx begin
+import React from 'react';
+
+export function Instructions() {
+  return (
+    <div className="mt-4 text-xs text-green-600 space-y-1">
+      <p>• カーソルキーで移動（行末で折り返し）</p>
+      <p>• クリックでカーソル移動</p>
+      <p>• 数字を入力</p>
+      <p>• Enterで基準点設定</p>
+      <p>• *で色切替</p>
+      <p>• BackspaceまたはDeleteで削除</p>
+    </div>
+  );
+}
+#### src\components\Instructions.tsx end
+
+
+
+#### src\components\NumpadToggle.tsx begin
+import React from 'react';
+import { Keyboard } from 'lucide-react';
+
+interface NumpadToggleProps {
+  isVisible: boolean;
+  onToggle: () => void;
+}
+
+export function NumpadToggle({ isVisible, onToggle }: NumpadToggleProps) {
+  return (
+    <button
+      onClick={onToggle}
+      className="fixed bottom-4 left-4 z-50 p-3 bg-black border-2 border-green-500 rounded-lg 
+        hover:bg-green-900 transition-colors"
+      title={isVisible ? 'テンキーを非表示' : 'テンキーを表示'}
+    >
+      <Keyboard 
+        className={`w-6 h-6 text-green-400 transition-transform duration-300 ${isVisible ? 'rotate-180' : ''}`} 
+      />
+    </button>
+  );
+}
+#### src\components\NumpadToggle.tsx end
+
+
+
+#### src\components\ResetButton.tsx begin
+import React, { useState } from 'react';
+import { RotateCcw } from 'lucide-react';
+
+interface ResetButtonProps {
+  onReset: () => void;
+}
+
+export function ResetButton({ onReset }: ResetButtonProps) {
+  const [showModal, setShowModal] = useState(false);
+
+  const handleReset = () => {
+    setShowModal(false);
+    onReset();
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="absolute -top-3 -right-3 p-2 rounded-lg bg-black border-2 border-green-500 
+          hover:bg-green-900 transition-colors z-10"
+      >
+        <RotateCcw className="w-5 h-5 text-green-400" />
+      </button>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-black border-2 border-green-500 p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h3 className="text-lg font-bold text-green-400 mb-4">リセット確認</h3>
+            <p className="text-green-300 mb-6">すべてのデータをリセットしますか？</p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 text-sm border border-green-500 rounded hover:bg-green-900 text-green-400 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleReset}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              >
+                リセット
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+#### src\components\ResetButton.tsx end
+
+
+
+#### src\components\StatusDisplay.tsx begin
+import React from 'react';
+import { Position } from '../types';
+
+interface StatusDisplayProps {
+  gameNumber: number;
+  position: Position;
+}
+
+export function StatusDisplay({ gameNumber, position }: StatusDisplayProps) {
+  const displayPosition = position.x + 1 + (position.y * 52);
+
+  return (
+    <div className="mt-4 text-sm border-t border-green-500 pt-4 text-green-500">
+      <div className="flex justify-between items-center">
+        <div>
+          <span className="text-green-600">ゲーム数:</span>{' '}
+          <span className="font-medium">{gameNumber}</span>
+        </div>
+        <div>
+          <span className="text-green-600">開始位置:</span>{' '}
+          <span className="font-medium">{displayPosition}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+#### src\components\StatusDisplay.tsx end
+
+
+
+#### src\components\GameBoxes\GameBoxDisplay.tsx begin
+import React from 'react';
+import { GameBox } from '../../types/gameBox';
+import { ResultDisplay } from './ResultDisplay';
+import { NumberCircles } from './NumberCircles';
+import { checkColorMismatch } from '../../utils/colorUtils';
+import { AlertTriangle } from 'lucide-react';
+import { calculateBaccaratResult } from '../../utils/baccarat/core/gameLogic';
+import { calculateHandValue } from '../../utils/baccarat/core/handValue';
+
+interface GameBoxDisplayProps {
+  box: GameBox;
+  isSelected: boolean;
+  onSelect: () => void;
+  referenceColor?: boolean;
+}
+
+export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor }: GameBoxDisplayProps) {
+  const hasMismatch = checkColorMismatch(box.numbers, box.colors, box.id, referenceColor);
+  const result = box.numbers ? calculateBaccaratResult(box.numbers) : null;
+  const drawValue = result === 'Draw' && box.numbers ? calculateHandValue([box.numbers[0], box.numbers[2]]) : undefined;
+
+  return (
+    <div
+      onClick={hasMismatch ? undefined : onSelect}
+      className={`
+        relative h-full border-2 rounded-lg p-2 sm:p-3 transition-colors
+        ${hasMismatch ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        ${isSelected ? 'bg-green-900 border-green-400' : 'border-green-500 hover:bg-green-900'}
+        bg-black text-green-500
+      `}
+    >
+      {hasMismatch && (
+        <div className="absolute top-2 right-2 text-red-500 flex items-center gap-1">
+          <AlertTriangle className="w-4 h-4" />
+        </div>
+      )}
+      <div className="flex items-center justify-center mb-2 sm:mb-3">
+        <span className="text-sm sm:text-base font-bold text-green-400">
+          {box.label}
+          {box.description && (
+            <span className="text-green-600 ml-1 text-xs sm:text-sm">({box.description})</span>
+          )}
+        </span>
+      </div>
+      <ResultDisplay 
+        result={result} 
+        isActive={box.isActive} 
+        numbers={drawValue !== undefined ? [drawValue] : undefined}
+      />
+      <NumberCircles 
+        numbers={box.numbers} 
+        colors={box.colors} 
+        result={result}
+      />
+    </div>
+  );
+}
+#### src\components\GameBoxes\GameBoxDisplay.tsx end
+
+
+
+#### src\components\GameBoxes\GameBoxesContainer.tsx begin
+import React, { useState, useEffect } from 'react';
+import { GameBox, GameBoxType } from '../../types/gameBox';
+import { GAME_BOXES } from '../../constants/gameBoxes';
+import { GameBoxDisplay } from './GameBoxDisplay';
+import { Position, GridData } from '../../types';
+import { getNumbersFromGrid } from '../../utils/gridUtils';
+import { calculateBaccaratResult, getUsedCardsCount } from '../../utils/baccarat';
+
+interface GameBoxesContainerProps {
+  grid: GridData;
+  referencePoint: Position | null;
+  onBoxSelect?: (boxId: GameBoxType, usedCards: number) => void;
+  gameNumber: number;
+  selectedBox: string | null;
+  setSelectedBox: (box: string | null) => void;
+}
+
+// ゲームボックスの更新ロジックを分離
+function updateGameBox(
+  box: GameBox,
+  grid: GridData,
+  referencePoint: Position
+): GameBox {
+  const [numbers, colors] = getNumbersFromGrid(grid, referencePoint, box.id);
+  const result = numbers.length >= 4 ? calculateBaccaratResult(numbers) : null;
+  
+  return {
+    ...box,
+    numbers,
+    colors,
+    activeResult: result,
+    isActive: numbers.length >= 4,
+  };
+}
+
+export function GameBoxesContainer({ 
+  grid, 
+  referencePoint,
+  onBoxSelect,
+  gameNumber,
+  selectedBox,
+  setSelectedBox
+}: GameBoxesContainerProps) {
+  const [gameBoxes, setGameBoxes] = useState<GameBox[]>(
+    GAME_BOXES.map(config => ({
+      ...config,
+      numbers: [],
+      colors: [],
+      activeResult: null,
+      isActive: false,
+    }))
+  );
+
+  useEffect(() => {
+    if (!referencePoint) return;
+    
+    const updatedBoxes = GAME_BOXES.map(box => 
+      updateGameBox(box, grid, referencePoint)
+    );
+
+    setGameBoxes(updatedBoxes);
+  }, [grid, referencePoint, gameNumber]);
+
+  const handleBoxSelect = (boxId: GameBoxType) => {
+    setSelectedBox(boxId);
+    const box = gameBoxes.find(b => b.id === boxId);
+    if (box && onBoxSelect) {
+      let usedCards = box.numbers.length >= 4 ? getUsedCardsCount(box.numbers) : 0;
+      
+      // FとGの場合は追加の移動量を加算
+      if (boxId === 'F') {
+        usedCards += 1;  // 通常の移動量+1（合計+2）
+      } else if (boxId === 'G') {
+        usedCards += 2;  // 通常の移動量+2（合計+3）
+      }
+      
+      onBoxSelect(boxId, usedCards);
+    }
+  };
+
+  // 基準点の色情報を取得
+  const referenceColor = referencePoint && grid[referencePoint.y][referencePoint.x].isRed;
+
+  return (
+    <div className="mt-4 space-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {gameBoxes.slice(0, 4).map((box) => (
+          <div key={box.id}>
+            <GameBoxDisplay
+              box={box}
+              isSelected={selectedBox === box.id}
+              onSelect={() => handleBoxSelect(box.id)}
+              referenceColor={referenceColor}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {gameBoxes.slice(4).map((box) => (
+          <div key={box.id}>
+            <GameBoxDisplay
+              box={box}
+              isSelected={selectedBox === box.id}
+              onSelect={() => handleBoxSelect(box.id)}
+              referenceColor={referenceColor}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+#### src\components\GameBoxes\GameBoxesContainer.tsx end
+
+
+
+#### src\components\GameBoxes\index.tsx begin
+export { GameBoxesContainer } from './GameBoxesContainer';
+export { GameBoxDisplay } from './GameBoxDisplay';
+export { NumberCircles } from './NumberCircles';
+export { ResultDisplay } from './ResultDisplay';
+#### src\components\GameBoxes\index.tsx end
+
+
+
+#### src\components\GameBoxes\NumberCircles.tsx begin
+import React from 'react';
+import { GameResult } from '../../types/gameBox';
+import { isFifthCardPlayer, isSixthCardPlayer, getUsedCardsCount } from '../../utils/baccarat';
+
+interface NumberCirclesProps {
+  numbers: number[];
+  colors: boolean[];
+  result: GameResult | null;
+}
+
+export function NumberCircles({ numbers = [], colors = [], result }: NumberCirclesProps) {
+  const getRole = (index: number): 'P' | 'B' | null => {
+    if (!result) return null;
+    
+    if (index === 0 || index === 2) return 'P';
+    if (index === 1 || index === 3) return 'B';
+    
+    if (index === 4) return isFifthCardPlayer(numbers) ? 'P' : 'B';
+    if (index === 5) return isSixthCardPlayer(numbers) ? 'P' : 'B';
+    
+    return null;
+  };
+
+  const usedCards = getUsedCardsCount(numbers);
+
+  return (
+    <div className="flex flex-nowrap gap-1 justify-center">
+      {numbers.slice(0, usedCards).map((number, index) => (
+        <div key={index} className="relative">
+          {getRole(index) && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] text-green-400">
+              {getRole(index)}
+            </div>
+          )}
+          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border flex items-center justify-center border-green-500 bg-black">
+            <span className={`text-xs sm:text-sm font-medium ${colors[index] ? 'text-red-500' : 'text-green-400'}`}>
+              {number}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+#### src\components\GameBoxes\NumberCircles.tsx end
+
+
+
+#### src\components\GameBoxes\ResultDisplay.tsx begin
+import React from 'react';
+import { GameResult } from '../../types/gameBox';
+
+interface ResultDisplayProps {
+  result: GameResult | null;
+  isActive: boolean;
+  numbers?: number[];
+}
+
+export function ResultDisplay({ result, isActive, numbers }: ResultDisplayProps) {
+  return (
+    <div className="flex items-center justify-center w-full mb-2 gap-4 relative">
+      {['Banker', 'Player', 'Draw'].map((type) => (
+        <span
+          key={type}
+          className={`
+            font-black text-base relative
+            ${!isActive ? 'text-green-900' : 
+              result === type ? 'text-yellow-400' : 'text-green-400'
+            }
+          `}
+        >
+          {type === 'Draw' && result === 'Draw' && isActive && numbers && (
+            <span className="absolute left-1/2 -translate-x-1/2 -top-6 text-xl text-yellow-400">
+              {numbers[0]}
+            </span>
+          )}
+          {type}
+        </span>
+      ))}
+    </div>
+  );
+}
+#### src\components\GameBoxes\ResultDisplay.tsx end
+
+
+
+#### src\components\Grid\Grid.tsx begin
+import React from 'react';
+import { GridCell } from './GridCell';
+import { Position, GridData } from '../../types';
+import { GRID_COLS } from '../../constants/grid';
+
+interface GridProps {
+  grid: GridData;
+  cursor: Position;
+  referencePoint: Position | null;
+  onCellClick: (x: number, y: number) => void;
+}
+
+export function Grid({ grid, cursor, referencePoint, onCellClick }: GridProps) {
+  return (
+    <div 
+      className="w-full overflow-x-auto touch-pan-x relative scrollbar-cyber"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
+      <div className="min-w-[800px] relative">
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-green-500/20 to-transparent opacity-50 sm:hidden" />
+        <div 
+          className="grid border-collapse bg-black"
+          style={{ 
+            gridTemplateColumns: `repeat(${GRID_COLS}, minmax(16px, 1fr))`,
+            width: '100%',
+          }}
+        >
+          {grid.map((row, y) => 
+            row.map((cell, x) => (
+              <GridCell
+                key={`${x}-${y}`}
+                x={x}
+                y={y}
+                cell={cell}
+                cursor={cursor}
+                referencePoint={referencePoint}
+                onClick={() => onCellClick(x, y)}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+#### src\components\Grid\Grid.tsx end
+
+
+
+#### src\components\Grid\GridCell.tsx begin
+import React from 'react';
+import { Position, CellData } from '../../types';
+
+interface GridCellProps {
+  x: number;
+  y: number;
+  cell: CellData;
+  cursor: Position;
+  referencePoint: Position | null;
+  onClick: () => void;
+}
+
+export function GridCell({ x, y, cell, cursor, referencePoint, onClick }: GridCellProps) {
+  const isCursor = cursor.x === x && cursor.y === y;
+  const isReference = referencePoint?.x === x && referencePoint?.y === y;
+
+  return (
+    <div
+      data-x={x}
+      data-y={y}
+      onClick={onClick}
+      className={`
+        aspect-square flex items-center justify-center relative cursor-pointer text-sm
+        border-r border-b border-green-500 last:border-r-0
+        ${isCursor ? 'bg-green-900' : ''}
+        ${isReference ? 'bg-blue-900' : 'bg-black'}
+        hover:bg-yellow-900/50
+        touch-manipulation
+      `}
+      style={{
+        minWidth: '16px',
+        minHeight: '16px'
+      }}
+    >
+      <span className={`
+        ${cell.isRed ? 'text-red-500' : 'text-green-400'}
+        ${cell.isBold ? 'font-bold' : ''}
+        ${isReference ? 'z-10' : ''}
+        select-none
+      `}>
+        {cell.displayValue || cell.value}
+      </span>
+    </div>
+  );
+}
+#### src\components\Grid\GridCell.tsx end
+
+
+
+#### src\components\Grid\index.tsx begin
+export { Grid } from './Grid';
+export { GridCell } from './GridCell';
+#### src\components\Grid\index.tsx end
+
+
+
+#### src\components\VirtualNumpad\index.ts begin
+export { VirtualNumpad } from './VirtualNumpad';
+export { NumpadToggle } from '../NumpadToggle';
+
+#### src\components\VirtualNumpad\index.ts end
+
+
+
+#### src\components\VirtualNumpad\index.tsx begin
+export { VirtualNumpad } from './VirtualNumpad';
+export { NumpadToggle } from './NumpadToggle';
+#### src\components\VirtualNumpad\index.tsx end
+
+
+
+#### src\components\VirtualNumpad\VirtualNumpad.tsx begin
+import React from 'react';
+import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Delete, KeyRound } from 'lucide-react';
+import { ColorMode } from '../../types';
+
+interface VirtualNumpadProps {
+  onNumberPress: (num: string) => void;
+  onArrowPress: (direction: 'left' | 'right' | 'up' | 'down') => void;
+  onDelete: () => void;
+  onBackspace: () => void;
+  onEnter: () => void;
+  onColorToggle: () => void;
+  onSpecialChar: (char: string) => void;
+  colorMode: ColorMode;
+  isVisible: boolean;
+}
+
+export function VirtualNumpad({
+  onNumberPress,
+  onArrowPress,
+  onDelete,
+  onBackspace,
+  onEnter,
+  onColorToggle,
+  onSpecialChar,
+  colorMode,
+  isVisible
+}: VirtualNumpadProps) {
+  if (!isVisible) return null;
+
+  const buttonClass = `
+    w-[calc(25vw-1.5rem)] h-[calc(25vw-1.5rem)] 
+    sm:w-16 sm:h-16 
+    flex items-center justify-center rounded-lg
+    border-2 border-green-500 text-green-400
+    hover:bg-green-900 active:bg-green-800
+    transition-colors font-medium text-xl
+    touch-manipulation
+  `;
+
+  return (
+    <div className="fixed bottom-4 right-4 left-16 sm:left-auto bg-black border-2 border-green-500 rounded-xl p-2 sm:p-4 shadow-lg">
+      <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
+        {/* Navigation Controls */}
+        <div className="col-span-4 grid grid-cols-3 gap-2 mb-2">
+          <button className={buttonClass} onClick={() => onArrowPress('left')}>
+            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+          <div className="grid grid-rows-2 gap-2">
+            <button className={buttonClass} onClick={() => onArrowPress('up')}>
+              <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            <button className={buttonClass} onClick={() => onArrowPress('down')}>
+              <ArrowDown className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          </div>
+          <button className={buttonClass} onClick={() => onArrowPress('right')}>
+            <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+        </div>
+
+        {/* Number Pad */}
+        <div className="col-span-4 grid grid-cols-3 gap-2">
+          {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((num) => (
+            <button
+              key={num}
+              className={buttonClass}
+              onClick={() => onNumberPress(num.toString())}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+
+        {/* Special Characters and 0 */}
+        <div className="col-span-4 grid grid-cols-3 gap-2">
+          <button className={buttonClass} onClick={() => onSpecialChar('/')}>
+            /
+          </button>
+          <button className={buttonClass} onClick={() => onNumberPress('0')}>
+            0
+          </button>
+          <button className={buttonClass} onClick={() => onSpecialChar('-')}>
+            -
+          </button>
+        </div>
+
+        {/* Function Keys */}
+        <div className="col-span-4 grid grid-cols-3 gap-2">
+          <button
+            className={`${buttonClass} ${colorMode === 'red' ? 'text-red-500' : ''}`}
+            onClick={onColorToggle}
+          >
+            *
+          </button>
+          <button className={buttonClass} onClick={onBackspace}>
+            <Delete className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+          <button className={buttonClass} onClick={onEnter}>
+            <KeyRound className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+#### src\components\VirtualNumpad\VirtualNumpad.tsx end
+
+
+
+#### src\constants\gameBoxes.ts begin
+import { GameBoxConfig } from '../types/gameBox';
+
+export const GAME_BOXES: GameBoxConfig[] = [
+  { id: 'A', label: 'A' },
+  { id: 'B', label: 'B', description: '1 2' },
+  { id: 'C', label: 'C', description: '2 3' },
+  { id: 'D', label: 'D', description: '3 4' },
+  { id: 'E', label: 'E', description: '5 6' },
+  { id: 'F', label: 'F', description: 'ちぎり1' },
+  { id: 'G', label: 'G', description: 'ちぎり2' },
+];
+#### src\constants\gameBoxes.ts end
+
+
+
+#### src\constants\grid.ts begin
+import { GridData } from '../types';
+
+// Grid configuration
+export const GRID_COLS = 52; // 52 characters per row
+export const GRID_ROWS = 9; // Fixed 9 rows, no scrolling
+export const DEFAULT_START_POSITION = 0; // 1番目の位置をデフォルトに
+
+export const INITIAL_GRID: GridData = Array(GRID_ROWS).fill(null).map(() => 
+  Array(GRID_COLS).fill(null).map(() => ({ value: '', isRed: false, isBold: false }))
+);
+#### src\constants\grid.ts end
+
+
+
+#### src\handlers\inputHandlers.ts begin
+import { Position, GridData, ColorMode, GameStatus } from '../types';
+import { insertCharacter, deleteCharacter } from '../utils/inputUtils';
+import { moveCursor } from '../utils/cursorUtils';
+import { adjustCursorIfNeeded } from './inputHelpers';
+
+export function handleNumberPress(
+  num: string,
+  grid: GridData,
+  cursor: Position,
+  colorMode: ColorMode,
+  setGrid: (value: React.SetStateAction<GridData>) => void,
+  setCursor: (value: React.SetStateAction<Position>) => void
+) {
+  const adjustedCursor = adjustCursorIfNeeded(grid, cursor);
+  const [newGrid, newCursor] = insertCharacter(grid, num, adjustedCursor, colorMode === 'red');
+  setGrid(newGrid);
+  setCursor(newCursor);
+}
+
+export function handleArrowPress(
+  direction: 'left' | 'right' | 'up' | 'down',
+  cursor: Position,
+  setCursor: (value: React.SetStateAction<Position>) => void
+) {
+  moveCursor(direction, cursor, setCursor);
+}
+
+export function handleEnter(
+  cursor: Position,
+  setReferencePoint: (value: React.SetStateAction<Position | null>) => void,
+  setGameStatus: (value: React.SetStateAction<GameStatus>) => void
+) {
+  setReferencePoint(cursor);
+  setGameStatus(prev => ({
+    ...prev,
+    startPosition: cursor,
+  }));
+}
+
+export function handleColorToggle(
+  setColorMode: (value: React.SetStateAction<ColorMode>) => void
+) {
+  setColorMode(prev => prev === 'black' ? 'red' : 'black');
+}
+
+export function handleDelete(
+  grid: GridData,
+  cursor: Position,
+  setGrid: (value: React.SetStateAction<GridData>) => void,
+  setCursor: (value: React.SetStateAction<Position>) => void
+) {
+  const [newGrid, newCursor] = deleteCharacter(grid, cursor, false);
+  setGrid(newGrid);
+  setCursor(newCursor);
+}
+
+export function handleBackspace(
+  grid: GridData,
+  cursor: Position,
+  setGrid: (value: React.SetStateAction<GridData>) => void,
+  setCursor: (value: React.SetStateAction<Position>) => void
+) {
+  const [newGrid, newCursor] = deleteCharacter(grid, cursor, true);
+  setGrid(newGrid);
+  setCursor(newCursor);
+}
+
+export function handleSpecialChar(
+  char: string,
+  grid: GridData,
+  cursor: Position,
+  colorMode: ColorMode,
+  setGrid: (value: React.SetStateAction<GridData>) => void,
+  setCursor: (value: React.SetStateAction<Position>) => void
+) {
+  const adjustedCursor = adjustCursorIfNeeded(grid, cursor);
+  const [newGrid, newCursor] = insertCharacter(
+    grid,
+    char,
+    adjustedCursor,
+    colorMode === 'red',
+    char === '-'
+  );
+  setGrid(newGrid);
+  setCursor(newCursor);
+}
+
+export function handleCellClick(
+  x: number,
+  y: number,
+  grid: GridData,
+  setCursor: (value: React.SetStateAction<Position>) => void
+) {
+  const lastPosition = findLastNonEmptyPosition(grid);
+  const clickPosition = y * GRID_COLS + x;
+  const lastFilledPosition = lastPosition.y * GRID_COLS + lastPosition.x;
+  
+  if (clickPosition > lastFilledPosition) {
+    setCursor(lastPosition);
+  } else {
+    setCursor({ x, y });
+  }
+  
+  if (window.innerWidth <= 640) {
+    setTimeout(() => {
+      const cell = document.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+      cell?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }, 100);
+  }
+}
+#### src\handlers\inputHandlers.ts end
+
+
+
+#### src\handlers\inputHelpers.ts begin
+import { Position, GridData } from '../types';
+import { findLastNonEmptyPosition } from '../utils/gridUtils';
+import { GRID_COLS } from '../constants/grid';
+
+export function adjustCursorIfNeeded(
+  grid: GridData,
+  cursor: Position
+): Position {
+  const lastPosition = findLastNonEmptyPosition(grid);
+  const cursorPos = cursor.y * GRID_COLS + cursor.x;
+  const lastFilledPos = lastPosition.y * GRID_COLS + lastPosition.x;
+  return cursorPos > lastFilledPos ? lastPosition : cursor;
+}
+
+#### src\handlers\inputHelpers.ts end
+
+
+
+#### src\hooks\useFocusManagement.ts begin
+import { useEffect } from 'react';
+
+export function useFocusManagement(containerRef: React.RefObject<HTMLDivElement>) {
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    const handleFocus = () => {
+      element.focus();
+    };
+
+    // 初期フォーカス
+    handleFocus();
+
+    // ウィンドウフォーカス時
+    window.addEventListener('focus', handleFocus);
+
+    // クリーンアップ
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [containerRef]);
+
+  const focus = () => {
+    containerRef.current?.focus();
+  };
+
+  return { focus };
+}
+#### src\hooks\useFocusManagement.ts end
+
+
+
+#### src\hooks\useGameState.ts begin
+import { useState } from 'react';
+import { Position } from '../types';
+import { DEFAULT_START_POSITION } from '../constants/grid';
+import { calculateNewPosition } from '../utils/positionUtils';
+
+export function useGameState() {
+  const [position, setPosition] = useState<Position>({ 
+    x: DEFAULT_START_POSITION, 
+    y: 0 
+  });
+  const [gameNumber, setGameNumber] = useState(1);
+  const [selectedBox, setSelectedBox] = useState<string | null>(null);
+
+  const reset = () => {
+    setPosition({ x: DEFAULT_START_POSITION, y: 0 });
+    setGameNumber(1);
+    setSelectedBox(null);
+  };
+
+  const updatePosition = (newPosition: Position) => {
+    setPosition(newPosition);
+  };
+
+  const advanceGame = (offset: number) => {
+    setGameNumber(prev => prev + 1);
+    setPosition(prev => calculateNewPosition(prev, offset));
+    setSelectedBox(null); // 選択状態をリセット
+  };
+
+  return {
+    position,
+    gameNumber,
+    selectedBox,
+    setSelectedBox,
+    updatePosition,
+    advanceGame,
+    reset
+  };
+}
+#### src\hooks\useGameState.ts end
+
+
+
+#### src\hooks\useKeyboardInput.ts begin
+import { useCallback, useEffect } from 'react';
+import { Position, GridData, ColorMode } from '../types';
+import * as handlers from '../handlers/inputHandlers';
+import { useFocusManagement } from './useFocusManagement';
+
+interface UseKeyboardInputProps {
+  containerRef: React.RefObject<HTMLDivElement>;
+  grid: GridData;
+  cursor: Position;
+  setCursor: (value: React.SetStateAction<Position>) => void;
+  setGrid: (value: React.SetStateAction<GridData>) => void;
+  setReferencePoint: (position: Position) => void;
+  colorMode: ColorMode;
+  setColorMode: (value: React.SetStateAction<ColorMode>) => void;
+}
+
+export function useKeyboardInput({
+  containerRef,
+  grid,
+  cursor,
+  setCursor,
+  setGrid,
+  setReferencePoint,
+  colorMode,
+  setColorMode,
+}: UseKeyboardInputProps) {
+  const { focus } = useFocusManagement(containerRef);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    e.preventDefault();
+    
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'ArrowRight':
+      case 'ArrowUp':
+      case 'ArrowDown':
+        handlers.handleArrowPress(
+          e.key.replace('Arrow', '').toLowerCase() as 'left' | 'right' | 'up' | 'down',
+          cursor,
+          setCursor
+        );
+        break;
+      case 'Enter':
+        setReferencePoint(cursor);
+        break;
+      case '*':
+        handlers.handleColorToggle(setColorMode);
+        break;
+      case 'Backspace':
+      case 'Delete':
+        if (e.key === 'Backspace') {
+          handlers.handleBackspace(grid, cursor, setGrid, setCursor);
+        } else {
+          handlers.handleDelete(grid, cursor, setGrid, setCursor);
+        }
+        break;
+      case '/':
+      case '-':
+        handlers.handleSpecialChar(e.key, grid, cursor, colorMode, setGrid, setCursor);
+        break;
+      default:
+        if (/^[0-9]$/.test(e.key)) {
+          handlers.handleNumberPress(e.key, grid, cursor, colorMode, setGrid, setCursor);
+        }
+    }
+  }, [cursor, setCursor, setGrid, setReferencePoint, colorMode, setColorMode, grid]);
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    element.addEventListener('keydown', handleKeyDown);
+    return () => element.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown, containerRef]);
+
+  return { focus };
+}
+#### src\hooks\useKeyboardInput.ts end
+
+
+
+#### src\hooks\useKeyboardNavigation.ts begin
+import { useCallback } from 'react';
+import { Position, GridData, ColorMode, GameStatus } from '../types';
+import { moveCursor } from '../utils/cursorUtils';
+import { deleteCharacter, insertCharacter } from '../utils/inputUtils';
+
+interface UseKeyboardNavigationProps {
+  grid: GridData;
+  cursor: Position;
+  setCursor: (value: React.SetStateAction<Position>) => void;
+  setGrid: (value: React.SetStateAction<GridData>) => void;
+  setReferencePoint: (value: React.SetStateAction<Position | null>) => void;
+  colorMode: ColorMode;
+  setColorMode: (value: React.SetStateAction<ColorMode>) => void;
+  gameStatus: GameStatus;
+  setGameStatus: (value: React.SetStateAction<GameStatus>) => void;
+}
+
+export function useKeyboardNavigation({
+  grid,
+  cursor,
+  setCursor,
+  setGrid,
+  setReferencePoint,
+  colorMode,
+  setColorMode,
+  gameStatus,
+  setGameStatus,
+}: UseKeyboardNavigationProps) {
+  return useCallback((e: KeyboardEvent) => {
+    e.preventDefault();
+    
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'ArrowRight':
+      case 'ArrowUp':
+      case 'ArrowDown':
+        moveCursor(e.key.replace('Arrow', '').toLowerCase() as 'left' | 'right' | 'up' | 'down',
+          cursor, setCursor);
+        break;
+      case 'Enter':
+        setReferencePoint(cursor);
+        setGameStatus(prev => ({
+          ...prev,
+          startPosition: cursor,
+        }));
+        break;
+      case '*':
+        setColorMode(prev => prev === 'black' ? 'red' : 'black');
+        break;
+      case 'Backspace':
+      case 'Delete':
+        setGrid(prev => {
+          const [newGrid, newPosition] = deleteCharacter(prev, cursor, e.key === 'Backspace');
+          setCursor(newPosition);
+          return newGrid;
+        });
+        break;
+      case '/':
+      case '-':
+        setGrid(prev => {
+          const [newGrid, newPosition] = insertCharacter(
+            prev,
+            e.key,
+            cursor,
+            colorMode === 'red',
+            e.key === '-'
+          );
+          setCursor(newPosition);
+          return newGrid;
+        });
+        break;
+      default:
+        if (/^[0-9]$/.test(e.key)) {
+          setGrid(prev => {
+            const [newGrid, newPosition] = insertCharacter(
+              prev,
+              e.key,
+              cursor,
+              colorMode === 'red'
+            );
+            setCursor(newPosition);
+            return newGrid;
+          });
+        }
+    }
+  }, [cursor, setCursor, setGrid, setReferencePoint, colorMode, setColorMode, setGameStatus]);
+}
+#### src\hooks\useKeyboardNavigation.ts end
+
+
+
+#### src\hooks\usePersistedState.ts begin
+import { useState, useEffect } from 'react';
+
+export function usePersistedState<T>(key: string, initialValue: T) {
+  // Get initial value from localStorage or use provided initialValue
+  const [state, setState] = useState<T>(() => {
+    const storedValue = localStorage.getItem(key);
+    return storedValue ? JSON.parse(storedValue) : initialValue;
+  });
+
+  // Update localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(state));
+  }, [key, state]);
+
+  return [state, setState] as const;
+}
+#### src\hooks\usePersistedState.ts end
+
+
+
+#### src\test\setup.ts begin
+import '@testing-library/jest-dom';
+import { expect, afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import matchers from '@testing-library/jest-dom/matchers';
+
+// @testing-library/jest-dom のマッチャーを追加
+expect.extend(matchers);
+
+// 各テスト後にクリーンアップ
+afterEach(() => {
+  cleanup();
+});
+
+#### src\test\setup.ts end
+
+
+
+#### src\types\game.ts begin
+import { Position } from './grid';
+
+export type ColorMode = 'black' | 'red';
+
+export interface GameStatus {
+  gameNumber: number;
+  startPosition: Position | null;
+}
+#### src\types\game.ts end
+
+
+
+#### src\types\gameBox.ts begin
+export type GameBoxType = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+export type GameResult = 'Banker' | 'Player' | 'Draw';
+
+export interface GameBox {
+  id: GameBoxType;
+  label: string;
+  description?: string;
+  numbers: number[];
+  colors: boolean[];
+  activeResult: GameResult | null;
+  isActive: boolean;
+}
+
+export interface GameBoxConfig {
+  id: GameBoxType;
+  label: string;
+  description?: string;
+}
+#### src\types\gameBox.ts end
+
+
+
+#### src\types\grid.ts begin
+export interface Position {
+  x: number;
+  y: number;
+}
+
+export interface CellData {
+  value: string;
+  isRed: boolean;
+  isBold?: boolean;
+  displayValue?: string;
+}
+
+export type GridRow = CellData[];
+export type GridData = GridRow[];
+#### src\types\grid.ts end
+
+
+
+#### src\types\index.ts begin
+export * from './grid';
+export * from './game';
+export * from './gameBox';
+#### src\types\index.ts end
+
+
+
+#### src\utils\colorUtils.ts begin
+import { GameBoxType } from '../types/gameBox';
+
+export function checkColorMismatch(
+  numbers: number[],
+  colors: boolean[],
+  boxType: GameBoxType,
+  referenceColor?: boolean
+): boolean {
+  if (numbers.length < 2) return false;
+
+  switch (boxType) {
+    case 'A':
+      // Aは色違い判定の対象外
+      return false;
+    case 'B':
+      if (numbers.length >= 2) {
+        return colors[0] !== colors[1];
+      }
+      break;
+    case 'C':
+      if (numbers.length >= 3) {
+        return colors[1] !== colors[2];
+      }
+      break;
+    case 'D':
+      if (numbers.length >= 4) {
+        return colors[2] !== colors[3];
+      }
+      break;
+    case 'E':
+      if (numbers.length >= 6) {
+        return colors[4] !== colors[5];
+      }
+      break;
+    case 'F':
+    case 'G':
+      // F,Gは基準点と1枚目が同じ色かどうかで判定
+      if (numbers.length >= 1 && referenceColor !== undefined) {
+        return colors[0] !== referenceColor;
+      }
+      break;
+  }
+
+  return false;
+}
+#### src\utils\colorUtils.ts end
+
+
+
+#### src\utils\cursorUtils.ts begin
+import { Position } from '../types';
+import { GRID_COLS, GRID_ROWS } from '../constants/grid';
+
+export function moveCursor(
+  direction: 'left' | 'right' | 'up' | 'down',
+  currentPosition: Position,
+  setCursor: (value: React.SetStateAction<Position>) => void,
+) {
+  setCursor(prev => {
+    let newX = prev.x;
+    let newY = prev.y;
+
+    switch (direction) {
+      case 'left':
+        if (prev.x > 0) {
+          newX = prev.x - 1;
+        } else if (prev.y > 0) {
+          newX = GRID_COLS - 1;
+          newY = prev.y - 1;
+        }
+        break;
+      case 'right':
+        if (prev.x < GRID_COLS - 1) {
+          newX = prev.x + 1;
+        } else if (prev.y < GRID_ROWS - 1) {
+          newX = 0;
+          newY = prev.y + 1;
+        }
+        break;
+      case 'up':
+        newY = Math.max(0, prev.y - 1);
+        break;
+      case 'down':
+        newY = Math.min(GRID_ROWS - 1, prev.y + 1);
+        break;
+    }
+
+    return { x: newX, y: newY };
+  });
+}
+#### src\utils\cursorUtils.ts end
+
+
+
+#### src\utils\gridUtils.ts begin
+import { Position, GridData } from '../types';
+import { GameBoxType } from '../types/gameBox';
+import { GRID_COLS, GRID_ROWS } from '../constants/grid';
+
+export function findLastNonEmptyPosition(grid: GridData): Position {
+  for (let y = GRID_ROWS - 1; y >= 0; y--) {
+    for (let x = GRID_COLS - 1; x >= 0; x--) {
+      if (grid[y][x].value !== '') {
+        if (x < GRID_COLS - 1) {
+          return { x: x + 1, y };
+        } else if (y < GRID_ROWS - 1) {
+          return { x: 0, y: y + 1 };
+        }
+        return { x, y };
+      }
+    }
+  }
+  return { x: 0, y: 0 };
+}
+
+export function countInputNumbers(grid: GridData): number {
+  return grid.reduce((count, row) => 
+    count + row.reduce((rowCount, cell) => 
+      rowCount + (cell.value !== '' ? 1 : 0), 0), 0);
+}
+
+export function getNumbersFromGrid(
+  grid: GridData,
+  referencePoint: Position,
+  boxType: GameBoxType
+): [number[], boolean[]] {
+  if (!referencePoint) return [[], []];
+
+  const startPos = referencePoint.x + (referencePoint.y * GRID_COLS);
+  const numbers: number[] = [];
+  const colors: boolean[] = [];
+  let pos = startPos;
+  
+  // 最大8枚まで読み込む（F,Gボックス用）
+  while (numbers.length < 8 && pos < GRID_COLS * GRID_ROWS) {
+    const y = Math.floor(pos / GRID_COLS);
+    const x = pos % GRID_COLS;
+    
+    if (y < grid.length && x < GRID_COLS) {
+      const cell = grid[y][x];
+      if (cell.value !== '') {
+        if (cell.value === '/') {
+          pos++;
+          continue;
+        }
+        
+        const numValue = cell.value === '-' ? 0 : parseInt(cell.value, 10);
+        numbers.push(numValue);
+        colors.push(cell.isRed);
+      }
+    }
+    pos++;
+  }
+
+  // F,Gボックスの場合、必要な枚数があるか確認
+  if (boxType === 'F' && numbers.length < 7) return [[], []];
+  if (boxType === 'G' && numbers.length < 8) return [[], []];
+
+  return processNumbers(numbers, colors, boxType);
+}
+
+function processNumbers(
+  numbers: number[], 
+  colors: boolean[], 
+  boxType: GameBoxType
+): [number[], boolean[]] {
+  let processedNumbers = [...numbers];
+  let processedColors = [...colors];
+
+  switch (boxType) {
+    case 'B':
+      if (processedNumbers.length >= 2) {
+        [processedNumbers[0], processedNumbers[1]] = [processedNumbers[1], processedNumbers[0]];
+        [processedColors[0], processedColors[1]] = [processedColors[1], processedColors[0]];
+      }
+      break;
+    case 'C':
+      if (processedNumbers.length >= 3) {
+        [processedNumbers[1], processedNumbers[2]] = [processedNumbers[2], processedNumbers[1]];
+        [processedColors[1], processedColors[2]] = [processedColors[2], processedColors[1]];
+      }
+      break;
+    case 'D':
+      if (processedNumbers.length >= 4) {
+        [processedNumbers[2], processedNumbers[3]] = [processedNumbers[3], processedNumbers[2]];
+        [processedColors[2], processedColors[3]] = [processedColors[3], processedColors[2]];
+      }
+      break;
+    case 'E':
+      if (processedNumbers.length >= 6) {
+        [processedNumbers[4], processedNumbers[5]] = [processedNumbers[5], processedNumbers[4]];
+        [processedColors[4], processedColors[5]] = [processedColors[5], processedColors[4]];
+      }
+      break;
+    case 'F':
+      // 7枚以上ある場合のみ処理
+      if (processedNumbers.length >= 7) {
+        processedNumbers = processedNumbers.slice(1, 7);
+        processedColors = processedColors.slice(1, 7);
+      }
+      break;
+    case 'G':
+      // 8枚以上ある場合のみ処理
+      if (processedNumbers.length >= 8) {
+        processedNumbers = processedNumbers.slice(2, 8);
+        processedColors = processedColors.slice(2, 8);
+      }
+      break;
+  }
+
+  return [processedNumbers.slice(0, 6), processedColors.slice(0, 6)];
+}
+#### src\utils\gridUtils.ts end
+
+
+
+#### src\utils\inputUtils.ts begin
+import { Position, GridData } from '../types';
+import { GRID_COLS, GRID_ROWS } from '../constants/grid';
+import { scrollToCursor } from './scrollUtils';
+
+export function deleteCharacter(
+  grid: GridData,
+  cursor: Position,
+  isBackspace: boolean
+): [GridData, Position] {
+  const newGrid = grid.map(row => [...row]);
+  const cursorPosition = cursor.y * GRID_COLS + cursor.x;
+  
+  const deletePos = isBackspace ? cursorPosition - 1 : cursorPosition;
+  if (deletePos < 0) return [grid, cursor];
+
+  const deleteY = Math.floor(deletePos / GRID_COLS);
+  const deleteX = deletePos % GRID_COLS;
+
+  const chars = [];
+  for (let y = deleteY; y < GRID_ROWS; y++) {
+    for (let x = (y === deleteY ? deleteX + 1 : 0); x < GRID_COLS; x++) {
+      if (newGrid[y][x].value !== '') {
+        chars.push({ ...newGrid[y][x] });
+      }
+    }
+  }
+
+  newGrid[deleteY][deleteX] = { value: '', isRed: false };
+
+  let pos = deletePos;
+  for (const char of chars) {
+    const y = Math.floor(pos / GRID_COLS);
+    const x = pos % GRID_COLS;
+    if (y < GRID_ROWS) {
+      newGrid[y][x] = char;
+      pos++;
+    }
+  }
+
+  if (chars.length > 0) {
+    const lastPos = deletePos + chars.length;
+    const lastY = Math.floor(lastPos / GRID_COLS);
+    const lastX = lastPos % GRID_COLS;
+    if (lastY < GRID_ROWS) {
+      newGrid[lastY][lastX] = { value: '', isRed: false };
+    }
+  }
+
+  const newCursor = { ...cursor };
+  if (isBackspace && cursorPosition > 0) {
+    if (cursor.x > 0) {
+      newCursor.x--;
+    } else if (cursor.y > 0) {
+      newCursor.y--;
+      newCursor.x = GRID_COLS - 1;
+    }
+  }
+
+  // Scroll to the new cursor position
+  scrollToCursor(newCursor);
+
+  return [newGrid, newCursor];
+}
+
+export function insertCharacter(
+  grid: GridData,
+  char: string,
+  cursor: Position,
+  isRed: boolean,
+  isBold = false
+): [GridData, Position] {
+  if (!char.trim()) return [grid, cursor];
+
+  const newGrid = grid.map(row => [...row]);
+  const cursorPosition = cursor.y * GRID_COLS + cursor.x;
+
+  const chars = [];
+  for (let y = cursor.y; y < GRID_ROWS; y++) {
+    for (let x = (y === cursor.y ? cursor.x : 0); x < GRID_COLS; x++) {
+      if (newGrid[y][x].value !== '') {
+        chars.push({ ...newGrid[y][x] });
+      }
+    }
+  }
+
+  newGrid[cursor.y][cursor.x] = {
+    value: char,
+    isRed,
+    isBold,
+    displayValue: char === '-' ? 'P' : undefined
+  };
+
+  let pos = cursorPosition + 1;
+  for (const char of chars) {
+    const y = Math.floor(pos / GRID_COLS);
+    const x = pos % GRID_COLS;
+    if (y < GRID_ROWS) {
+      newGrid[y][x] = char;
+      pos++;
+    }
+  }
+
+  const newCursor = { ...cursor };
+  if (cursor.x < GRID_COLS - 1) {
+    newCursor.x++;
+  } else if (cursor.y < GRID_ROWS - 1) {
+    newCursor.x = 0;
+    newCursor.y++;
+  }
+
+  // Scroll to the new cursor position
+  scrollToCursor(newCursor);
+
+  return [newGrid, newCursor];
+}
+#### src\utils\inputUtils.ts end
+
+
+
+#### src\utils\positionUtils.ts begin
+import { Position } from '../types';
+import { GRID_COLS, GRID_ROWS } from '../constants/grid';
+
+export function calculateNewPosition(current: Position, offset: number): Position {
+  let newX = current.x + offset;
+  let newY = current.y;
+
+  while (newX >= GRID_COLS) {
+    newX -= GRID_COLS;
+    newY++;
+  }
+
+  if (newY >= GRID_ROWS) {
+    newY = GRID_ROWS - 1;
+    newX = GRID_COLS - 1;
+  }
+
+  return { x: newX, y: newY };
+}
+#### src\utils\positionUtils.ts end
+
+
+
+#### src\utils\scrollUtils.ts begin
+import { Position } from '../types';
+
+export function scrollToCursor(cursor: Position): void {
+  if (window.innerWidth <= 640) { // Only scroll on mobile devices
+    setTimeout(() => {
+      const cell = document.querySelector(`[data-x="${cursor.x}"][data-y="${cursor.y}"]`);
+      if (cell) {
+        cell.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest'
+        });
+      }
+    }, 50); // Small delay to ensure DOM is updated
+  }
+}
+#### src\utils\scrollUtils.ts end
+
+
+
+#### src\utils\baccarat\handEvaluator.ts begin
+import { BaccaratHand } from './types';
+import { calculateHandValue } from './cardUtils';
+import { shouldPlayerDraw, shouldBankerDraw } from './drawingRules';
+
+export function evaluateHand(
+  initialCards: number[],
+  isPlayer: boolean,
+  opponentThirdCard?: number
+): BaccaratHand {
+  const initialValue = calculateHandValue(initialCards);
+  const finalCards = [...initialCards];
+  let drewThirdCard = false;
+
+  const shouldDraw = isPlayer
+    ? shouldPlayerDraw(initialValue)
+    : shouldBankerDraw(initialValue, opponentThirdCard);
+
+  if (shouldDraw && initialCards.length === 2) {
+    drewThirdCard = true;
+  }
+
+  const finalValue = calculateHandValue(finalCards);
+
+  return {
+    initialCards,
+    value: finalValue,
+    thirdCard: drewThirdCard ? finalCards[2] : undefined,
+    cards: finalCards,  // 後方互換性のために残す
+    total: finalValue   // 後方互換性のために残す
+  };
+}
+#### src\utils\baccarat\handEvaluator.ts end
+
+
+
+#### src\utils\baccarat\index.ts begin
+// Hand evaluation
+export {
+  calculateHandValue,
+  isNatural
+} from './core/handValue';
+
+// Game logic
+export {
+  calculateBaccaratResult,
+  getUsedCardsCount,
+  shouldPlayerDraw,
+  shouldBankerDraw
+} from './core/gameLogic';
+
+// Card position
+export {
+  isFifthCardPlayer,
+  isSixthCardPlayer
+} from './core/cardPosition';
+
+// Constants
+export {
+  NATURAL_THRESHOLD,
+  PLAYER_DRAW_THRESHOLD,
+  BANKER_MANDATORY_DRAW,
+  MAX_HAND_VALUE
+} from './core/constants';
+
+// Types
+export type { GameResult, BaccaratGame, BaccaratHand } from './types';
+#### src\utils\baccarat\index.ts end
+
+
+
+#### src\utils\baccarat\types.ts begin
+export type GameResult = 'Player' | 'Banker' | 'Draw';
+
+export interface BaccaratHand {
+  initialCards: number[];
+  value: number;
+  thirdCard: number | undefined;
+  cards?: number[];  // 後方互換性のために残す
+  total?: number;    // 後方互換性のために残す
+}
+
+export interface BaccaratGame {
+  player: BaccaratHand;
+  banker: BaccaratHand;
+  result: GameResult | null;
+}
+
+// 後方互換性のために残す
+export interface Hand extends BaccaratHand {}
+export interface GameState extends BaccaratGame {}
+#### src\utils\baccarat\types.ts end
+
+
+
+#### src\utils\baccarat\core\cardPosition.ts begin
+import { calculateHandValue } from './handValue';
+import { shouldPlayerDraw, shouldBankerDraw } from './gameLogic';
+
+export function isFifthCardPlayer(numbers: number[]): boolean {
+  if (!numbers || numbers.length < 4) return false;
+
+  const playerInitial = calculateHandValue([numbers[0], numbers[2]]);
+  const bankerInitial = calculateHandValue([numbers[1], numbers[3]]);
+
+  return shouldPlayerDraw(playerInitial);
+}
+
+export function isSixthCardPlayer(numbers: number[]): boolean {
+  if (!numbers || numbers.length < 5) return false;
+
+  const playerInitial = calculateHandValue([numbers[0], numbers[2]]);
+  const bankerInitial = calculateHandValue([numbers[1], numbers[3]]);
+
+  return shouldPlayerDraw(playerInitial) && shouldBankerDraw(bankerInitial, numbers[4]);
+}
+#### src\utils\baccarat\core\cardPosition.ts end
+
+
+
+#### src\utils\baccarat\core\constants.ts begin
+export const NATURAL_THRESHOLD = 8;
+export const PLAYER_DRAW_THRESHOLD = 5;
+export const BANKER_MANDATORY_DRAW = 2;
+export const MAX_HAND_VALUE = 10;
+#### src\utils\baccarat\core\constants.ts end
+
+
+
+#### src\utils\baccarat\core\gameLogic.ts begin
+import { GameResult } from '../types';
+import { calculateHandValue, isNatural } from './handValue';
+
+export function shouldPlayerDraw(value: number): boolean {
+  // プレイヤーは0-5の場合のみ3枚目を引く
+  // 6-7の場合は引かない（8-9はナチュラルで既に処理済み）
+  return value >= 0 && value <= 5;
+}
+
+export function shouldBankerDraw(
+  bankerValue: number,
+  playerThirdCard?: number
+): boolean {
+  // 1. バンカーが7以上の場合は絶対に引かない
+  if (bankerValue >= 7) return false;
+  
+  // 2. バンカーが0,1,2の場合は必ず引く
+  if (bankerValue <= 2) return true;
+
+  // 3. プレイヤーが3枚目を引かなかった場合
+  if (playerThirdCard === undefined) {
+    return bankerValue <= 5;  // バンカーは5以下なら引く
+  }
+
+  // 4. プレイヤーの3枚目の値によってバンカーの引くルールが変わる
+  switch (bankerValue) {
+    case 3:  // バンカーが3の場合、プレイヤーの3枚目が8以外なら引く
+      return playerThirdCard !== 8;
+    case 4:  // バンカーが4の場合、プレイヤーの3枚目が2-7なら引く
+      return playerThirdCard >= 2 && playerThirdCard <= 7;
+    case 5:  // バンカーが5の場合、プレイヤーの3枚目が4-7なら引く
+      return playerThirdCard >= 4 && playerThirdCard <= 7;
+    case 6:  // バンカーが6の場合、プレイヤーの3枚目が6,7なら引く
+      return playerThirdCard === 6 || playerThirdCard === 7;
+    default:
+      return false;
+  }
+}
+
+export function getRequiredCardsCount(numbers: number[]): number {
+  if (!numbers || numbers.length < 4) return 0;
+
+  // Convert P (represented as 0) to actual 0 for calculations
+  const processedNumbers = numbers.map(n => n === 0 ? 0 : n);
+
+  const playerValue = calculateHandValue([processedNumbers[0], processedNumbers[2]]);
+  const bankerValue = calculateHandValue([processedNumbers[1], processedNumbers[3]]);
+
+  // Natural 8 or 9
+  if (isNatural(playerValue) || isNatural(bankerValue)) {
+    return 4;
+  }
+
+  // Check if player should draw
+  if (shouldPlayerDraw(playerValue)) {
+    if (shouldBankerDraw(bankerValue, processedNumbers[4])) {
+      return 6;
+    }
+    return 5;
+  }
+
+  // Check if banker should draw
+  if (shouldBankerDraw(bankerValue, undefined)) {
+    return 5;
+  }
+
+  return 4;
+}
+
+export function calculateBaccaratResult(numbers: number[]): GameResult | null {
+  if (!numbers || numbers.length < 4) return null;
+
+  const requiredCards = getRequiredCardsCount(numbers);
+  if (numbers.length < requiredCards) return null;
+
+  const playerInitial = calculateHandValue([numbers[0], numbers[2]]);
+  const bankerInitial = calculateHandValue([numbers[1], numbers[3]]);
+
+  if (isNatural(playerInitial) || isNatural(bankerInitial)) {
+    if (playerInitial > bankerInitial) return 'Player';
+    if (bankerInitial > playerInitial) return 'Banker';
+    return 'Draw';
+  }
+
+  let playerFinal = playerInitial;
+  let bankerFinal = bankerInitial;
+
+  if (shouldPlayerDraw(playerInitial) && numbers.length >= 5) {
+    playerFinal = calculateHandValue([numbers[0], numbers[2], numbers[4]]);
+    
+    if (shouldBankerDraw(bankerInitial, numbers[4]) && numbers.length >= 6) {
+      bankerFinal = calculateHandValue([numbers[1], numbers[3], numbers[5]]);
+    }
+  } else if (shouldBankerDraw(bankerInitial) && numbers.length >= 5) {
+    bankerFinal = calculateHandValue([numbers[1], numbers[3], numbers[4]]);
+  }
+
+  if (playerFinal > bankerFinal) return 'Player';
+  if (bankerFinal > playerFinal) return 'Banker';
+  return 'Draw';
+}
+
+export function getUsedCardsCount(numbers: number[]): number {
+  const baseCount = getRequiredCardsCount(numbers);
+  
+  if (!numbers || numbers.length === 0) {
+    return baseCount;
+  }
+
+  return baseCount;
+}
+#### src\utils\baccarat\core\gameLogic.ts end
+
+
+
+#### src\utils\baccarat\core\gameResult.ts begin
+import { GameResult } from '../types';
+
+export function determineWinner(playerValue: number, bankerValue: number): GameResult {
+  if (playerValue > bankerValue) return 'Player';
+  if (bankerValue > playerValue) return 'Banker';
+  return 'Draw';
+}
+#### src\utils\baccarat\core\gameResult.ts end
+
+
+
+#### src\utils\baccarat\core\gameState.ts begin
+import { BaccaratHand, BaccaratGame } from '../types';
+import { calculateHandValue, isNatural } from './handValue';
+import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
+import { NATURAL_MIN } from '../constants';
+import { determineWinner } from './gameResult';
+import { getRequiredCardsCount } from './gameLogic';
+
+function isNatural(value: number): boolean {
+  return value >= NATURAL_MIN;
+}
+
+export function evaluateGame(numbers: number[]): BaccaratGame | null {
+  if (!numbers || numbers.length < 4) return null;
+
+  // Convert P (represented as 0) to actual 0 for calculations
+  const processedNumbers = numbers.map(n => n === 0 ? 0 : n);
+
+  const requiredCards = getRequiredCardsCount(processedNumbers);
+  if (processedNumbers.length < requiredCards) return null;
+
+  const player: BaccaratHand = {
+    initialCards: [processedNumbers[0], processedNumbers[2]],
+    value: calculateHandValue([processedNumbers[0], processedNumbers[2]]),
+    thirdCard: undefined
+  };
+
+  const banker: BaccaratHand = {
+    initialCards: [processedNumbers[1], processedNumbers[3]],
+    value: calculateHandValue([processedNumbers[1], processedNumbers[3]]),
+    thirdCard: undefined
+  };
+
+  // Check for naturals
+  if (isNatural(player.value) || isNatural(banker.value)) {
+    return {
+      player,
+      banker,
+      result: determineWinner(player.value, banker.value)
+    };
+  }
+
+  // Handle player's third card
+  if (shouldPlayerDraw(player.value) && processedNumbers.length >= 5) {
+    player.thirdCard = processedNumbers[4];
+    player.value = calculateHandValue([...player.initialCards, player.thirdCard]);
+  }
+
+  // Handle banker's third card
+  if (shouldBankerDraw(banker.value, player.thirdCard)) {
+    const bankerThirdCardIndex = player.thirdCard ? 5 : 4;
+    if (processedNumbers.length > bankerThirdCardIndex) {
+      banker.thirdCard = processedNumbers[bankerThirdCardIndex];
+      banker.value = calculateHandValue([...banker.initialCards, banker.thirdCard]);
+    }
+  }
+
+  return {
+    player,
+    banker,
+    result: determineWinner(player.value, banker.value)
+  };
+}
+
+#### src\utils\baccarat\core\gameState.ts end
+
+
+
+#### src\utils\baccarat\core\handValue.ts begin
+export function calculateHandValue(cards: number[]): number {
+  if (!cards || !cards.length) return 0;
+  const sum = cards.reduce((acc, card) => acc + (card === 0 ? 0 : card), 0);
+  return sum % 10;
+}
+
+export function isNatural(value: number): boolean {
+  return value >= 8;
+}
+#### src\utils\baccarat\core\handValue.ts end
+
+
+
+#### src\utils\baccarat\core\index.ts begin
+import { GameResult } from '../types';
+import { calculateHandValue } from './handValue';
+import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
+
+function getRequiredCardsCount(numbers: number[]): number {
+  if (!numbers || numbers.length < 4) return 0;
+
+  const playerInitial = calculateHandValue([numbers[0], numbers[2]]);
+  const bankerInitial = calculateHandValue([numbers[1], numbers[3]]);
+
+  if (playerInitial >= 8 || bankerInitial >= 8) {
+    return 4;
+  }
+
+  if (shouldPlayerDraw(playerInitial)) {
+    if (numbers.length < 5) return 5;
+    return shouldBankerDraw(bankerInitial, numbers[4]) ? 6 : 5;
+  }
+
+  return shouldBankerDraw(bankerInitial) ? 5 : 4;
+}
+
+export function calculateBaccaratResult(numbers: number[]): GameResult | null {
+  if (!numbers || numbers.length < 4) return null;
+
+  const requiredCards = getRequiredCardsCount(numbers);
+  if (numbers.length < requiredCards) return null;
+
+  const playerInitial = calculateHandValue([numbers[0], numbers[2]]);
+  const bankerInitial = calculateHandValue([numbers[1], numbers[3]]);
+
+  if (playerInitial >= 8 || bankerInitial >= 8) {
+    if (playerInitial > bankerInitial) return 'Player';
+    if (bankerInitial > playerInitial) return 'Banker';
+    return 'Draw';
+  }
+
+  let playerFinal = playerInitial;
+  let bankerFinal = bankerInitial;
+
+  if (shouldPlayerDraw(playerInitial) && numbers.length >= 5) {
+    playerFinal = calculateHandValue([numbers[0], numbers[2], numbers[4]]);
+    
+    if (shouldBankerDraw(bankerInitial, numbers[4]) && numbers.length >= 6) {
+      bankerFinal = calculateHandValue([numbers[1], numbers[3], numbers[5]]);
+    }
+  } else if (shouldBankerDraw(bankerInitial) && numbers.length >= 5) {
+    bankerFinal = calculateHandValue([numbers[1], numbers[3], numbers[4]]);
+  }
+
+  if (playerFinal > bankerFinal) return 'Player';
+  if (bankerFinal > playerFinal) return 'Banker';
+  return 'Draw';
+}
+
+export function getUsedCardsCount(numbers: number[]): number {
+  return getRequiredCardsCount(numbers);
+}
+
+export { calculateHandValue } from './handValue';
+export { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
+#### src\utils\baccarat\core\index.ts end
+
+
+
+#### src\utils\baccarat\core\__tests__\cardPosition.test.ts begin
+import { describe, it, expect } from 'vitest';
+import { isFifthCardPlayer, isSixthCardPlayer } from '../cardPosition';
+
+describe('カード位置の判定', () => {
+  describe('isFifthCardPlayer', () => {
+    it('5枚目のカードがプレイヤーのものかを正しく判定する', () => {
+      // プレイヤー: 5 (2,3), バンカー: 7 (3,4) → プレイヤーが引く
+      expect(isFifthCardPlayer([2, 3, 3, 4])).toBe(true);
+
+      // プレイヤー: 6 (3,3), バンカー: 5 (2,3) → バンカーが引く
+      expect(isFifthCardPlayer([3, 2, 3, 3])).toBe(false);
+
+      // プレイヤー: 8 (4,4), バンカー: 7 (3,4) → 誰も引かない
+      expect(isFifthCardPlayer([4, 3, 4, 4])).toBe(false);
+    });
+
+    it('無効な入力の場合はfalseを返す', () => {
+      expect(isFifthCardPlayer([])).toBe(false);
+      expect(isFifthCardPlayer([1, 2])).toBe(false);
+      expect(isFifthCardPlayer([1, 2, 3])).toBe(false);
+    });
+  });
+
+  describe('isSixthCardPlayer', () => {
+    it('6枚目のカードがプレイヤーのものかを正しく判定する', () => {
+      // プレイヤー: 5 (2,3) → 8 (2,3,3), バンカー: 5 (2,3) → バンカーが引く
+      expect(isSixthCardPlayer([2, 2, 3, 3, 3])).toBe(false);
+
+      // プレイヤー: 5 (2,3) → 8 (2,3,3), バンカー: 6 (3,3) → バンカーは引かない
+      expect(isSixthCardPlayer([2, 3, 3, 3, 3])).toBe(false);
+    });
+
+    it('無効な入力の場合はfalseを返す', () => {
+      expect(isSixthCardPlayer([])).toBe(false);
+      expect(isSixthCardPlayer([1, 2, 3, 4])).toBe(false);
+      expect(isSixthCardPlayer([1, 2, 3, 4, 5])).toBe(false);
+    });
+  });
+});
+
+#### src\utils\baccarat\core\__tests__\cardPosition.test.ts end
+
+
+
+#### src\utils\baccarat\core\__tests__\gameLogic.test.ts begin
+import { describe, it, expect } from 'vitest';
+import {
+  calculateBaccaratResult,
+  shouldPlayerDraw,
+  shouldBankerDraw,
+  getRequiredCardsCount
+} from '../gameLogic';
+
+describe('Baccarat Game Logic', () => {
+  describe('shouldPlayerDraw', () => {
+    it('should draw when value is 0-5', () => {
+      expect(shouldPlayerDraw(0)).toBe(true);
+      expect(shouldPlayerDraw(3)).toBe(true);
+      expect(shouldPlayerDraw(5)).toBe(true);
+    });
+
+    it('should not draw when value is 6-9', () => {
+      expect(shouldPlayerDraw(6)).toBe(false);
+      expect(shouldPlayerDraw(7)).toBe(false);
+      expect(shouldPlayerDraw(8)).toBe(false);
+      expect(shouldPlayerDraw(9)).toBe(false);
+    });
+  });
+
+  describe('shouldBankerDraw', () => {
+    it('should always draw when value is 0-2', () => {
+      expect(shouldBankerDraw(0)).toBe(true);
+      expect(shouldBankerDraw(1)).toBe(true);
+      expect(shouldBankerDraw(2)).toBe(true);
+    });
+
+    it('should never draw when value is 7-9', () => {
+      expect(shouldBankerDraw(7)).toBe(false);
+      expect(shouldBankerDraw(8)).toBe(false);
+      expect(shouldBankerDraw(9)).toBe(false);
+    });
+
+    it('should follow complex rules when value is 3-6', () => {
+      // バンカーが3の場合
+      expect(shouldBankerDraw(3, 8)).toBe(false);
+      expect(shouldBankerDraw(3, 7)).toBe(true);
+
+      // バンカーが4の場合
+      expect(shouldBankerDraw(4, 1)).toBe(false);
+      expect(shouldBankerDraw(4, 2)).toBe(true);
+      expect(shouldBankerDraw(4, 7)).toBe(true);
+      expect(shouldBankerDraw(4, 8)).toBe(false);
+
+      // バンカーが5の場合
+      expect(shouldBankerDraw(5, 3)).toBe(false);
+      expect(shouldBankerDraw(5, 4)).toBe(true);
+      expect(shouldBankerDraw(5, 7)).toBe(true);
+      expect(shouldBankerDraw(5, 8)).toBe(false);
+
+      // バンカーが6の場合
+      expect(shouldBankerDraw(6, 5)).toBe(false);
+      expect(shouldBankerDraw(6, 6)).toBe(true);
+      expect(shouldBankerDraw(6, 7)).toBe(true);
+      expect(shouldBankerDraw(6, 8)).toBe(false);
+    });
+  });
+
+  describe('calculateBaccaratResult', () => {
+    it('should return null for invalid input', () => {
+      expect(calculateBaccaratResult([])).toBeNull();
+      expect(calculateBaccaratResult([1, 2])).toBeNull();
+      expect(calculateBaccaratResult([1, 2, 3])).toBeNull();
+    });
+
+    it('should handle natural wins', () => {
+      // プレイヤー: 9 (4,5), バンカー: 7 (3,4)
+      expect(calculateBaccaratResult([4, 3, 5, 4])).toBe('Player');
+      
+      // プレイヤー: 7 (3,4), バンカー: 8 (4,4)
+      expect(calculateBaccaratResult([3, 4, 4, 4])).toBe('Banker');
+    });
+
+    it('should handle natural ties', () => {
+      // プレイヤー: 8 (4,4), バンカー: 8 (4,4)
+      expect(calculateBaccaratResult([4, 4, 4, 4])).toBe('Draw');
+    });
+
+    it('should handle player third card scenarios', () => {
+      // プレイヤー: 5 (2,3) → 8 (2,3,3), バンカー: 6 (3,3)
+      expect(calculateBaccaratResult([2, 3, 3, 3, 3])).toBe('Player');
+    });
+
+    it('should handle banker third card scenarios', () => {
+      // プレイヤー: 6 (3,3), バンカー: 5 (2,3) → 8 (2,3,3)
+      expect(calculateBaccaratResult([3, 2, 3, 3, 3])).toBe('Banker');
+    });
+  });
+
+  describe('getRequiredCardsCount', () => {
+    it('should require 4 cards for naturals', () => {
+      // プレイヤー: 8 (4,4), バンカー: 7 (3,4)
+      expect(getRequiredCardsCount([4, 3, 4, 4])).toBe(4);
+    });
+
+    it('should require 5 cards when only player draws', () => {
+      // プレイヤー: 5 (2,3), バンカー: 7 (3,4)
+      expect(getRequiredCardsCount([2, 3, 3, 4])).toBe(5);
+    });
+
+    it('should require 5 cards when only banker draws', () => {
+      // プレイヤー: 6 (3,3), バンカー: 5 (2,3)
+      expect(getRequiredCardsCount([3, 2, 3, 3])).toBe(5);
+    });
+
+    it('should require 6 cards when both draw', () => {
+      // プレイヤー: 2 (1,1), バンカー: 2 (1,1) → プレイヤーが3枚目を引く
+      expect(getRequiredCardsCount([1, 1, 1, 1, 3])).toBe(6);
+    });
+  });
+});
+
+#### src\utils\baccarat\core\__tests__\gameLogic.test.ts end
+
+
+
+#### src\utils\baccarat\core\__tests__\handValue.test.ts begin
+import { describe, it, expect } from 'vitest';
+import { calculateHandValue, isNatural } from '../handValue';
+
+describe('バカラの手札評価', () => {
+  describe('calculateHandValue', () => {
+    it('空の配列や無効な入力の場合は0を返す', () => {
+      expect(calculateHandValue([])).toBe(0);
+      expect(calculateHandValue(undefined as any)).toBe(0);
+      expect(calculateHandValue(null as any)).toBe(0);
+    });
+
+    it('単一のカードの値を正しく計算する', () => {
+      expect(calculateHandValue([1])).toBe(1);
+      expect(calculateHandValue([5])).toBe(5);
+      expect(calculateHandValue([9])).toBe(9);
+      expect(calculateHandValue([0])).toBe(0);
+    });
+
+    it('複数のカードの合計を正しく計算する', () => {
+      expect(calculateHandValue([1, 2])).toBe(3);
+      expect(calculateHandValue([4, 5])).toBe(9);
+      expect(calculateHandValue([6, 7])).toBe(3); // 13 % 10 = 3
+      expect(calculateHandValue([9, 9])).toBe(8); // 18 % 10 = 8
+    });
+
+    it('3枚のカードの合計を正しく計算する', () => {
+      expect(calculateHandValue([1, 2, 3])).toBe(6);
+      expect(calculateHandValue([4, 5, 6])).toBe(5); // 15 % 10 = 5
+      expect(calculateHandValue([7, 8, 9])).toBe(4); // 24 % 10 = 4
+    });
+
+    it('0（ジョーカー）を含む計算を正しく処理する', () => {
+      expect(calculateHandValue([0, 1])).toBe(1);
+      expect(calculateHandValue([0, 5])).toBe(5);
+      expect(calculateHandValue([1, 0, 2])).toBe(3);
+    });
+  });
+
+  describe('isNatural', () => {
+    it('8と9はナチュラルとして判定される', () => {
+      expect(isNatural(8)).toBe(true);
+      expect(isNatural(9)).toBe(true);
+    });
+
+    it('7以下の値はナチュラルとして判定されない', () => {
+      expect(isNatural(0)).toBe(false);
+      expect(isNatural(5)).toBe(false);
+      expect(isNatural(7)).toBe(false);
+    });
+  });
+});
+
+#### src\utils\baccarat\core\__tests__\handValue.test.ts end
+
+

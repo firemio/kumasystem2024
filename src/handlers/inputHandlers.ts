@@ -1,8 +1,7 @@
 import { Position, GridData, ColorMode, GameStatus } from '../types';
 import { insertCharacter, deleteCharacter } from '../utils/inputUtils';
 import { moveCursor } from '../utils/cursorUtils';
-import { findLastNonEmptyPosition } from '../utils/gridUtils';
-import { GRID_COLS } from '../constants/grid';
+import { adjustCursorIfNeeded } from './inputHelpers';
 
 export function handleNumberPress(
   num: string,
@@ -12,15 +11,8 @@ export function handleNumberPress(
   setGrid: (value: React.SetStateAction<GridData>) => void,
   setCursor: (value: React.SetStateAction<Position>) => void
 ) {
-  const lastPosition = findLastNonEmptyPosition(grid);
-  const cursorPosition = cursor.y * GRID_COLS + cursor.x;
-  const lastFilledPosition = lastPosition.y * GRID_COLS + lastPosition.x;
-
-  if (cursorPosition > lastFilledPosition) {
-    cursor = lastPosition;
-  }
-
-  const [newGrid, newCursor] = insertCharacter(grid, num, cursor, colorMode === 'red');
+  const adjustedCursor = adjustCursorIfNeeded(grid, cursor);
+  const [newGrid, newCursor] = insertCharacter(grid, num, adjustedCursor, colorMode === 'red');
   setGrid(newGrid);
   setCursor(newCursor);
 }
@@ -81,18 +73,11 @@ export function handleSpecialChar(
   setGrid: (value: React.SetStateAction<GridData>) => void,
   setCursor: (value: React.SetStateAction<Position>) => void
 ) {
-  const lastPosition = findLastNonEmptyPosition(grid);
-  const cursorPosition = cursor.y * GRID_COLS + cursor.x;
-  const lastFilledPosition = lastPosition.y * GRID_COLS + lastPosition.x;
-
-  if (cursorPosition > lastFilledPosition) {
-    cursor = lastPosition;
-  }
-
+  const adjustedCursor = adjustCursorIfNeeded(grid, cursor);
   const [newGrid, newCursor] = insertCharacter(
     grid,
     char,
-    cursor,
+    adjustedCursor,
     colorMode === 'red',
     char === '-'
   );
