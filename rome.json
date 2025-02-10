@@ -1,0 +1,21 @@
+{
+  "linter": {
+    "enabled": true,
+    "ignore": ["dist/**/*"],
+    "rules": {
+      "recommended": true,
+      "style": {
+        "noNonNullAssertion": "off",
+        "noParameterAssign": "off"
+      },
+      "a11y": {
+        "useButtonType": "off",
+        "useKeyWithClickEvents": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noEmptyInterface": "off"
+      }
+    }
+  }
+}

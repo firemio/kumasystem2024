@@ -1,5 +1,5 @@
 import { BaccaratHand } from './types';
-import { calculateHandValue, hasNatural } from './cardUtils';
+import { calculateHandValue } from './cardUtils';
 import { shouldPlayerDraw, shouldBankerDraw } from './drawingRules';
 
 export function evaluateHand(
@@ -8,7 +8,7 @@ export function evaluateHand(
   opponentThirdCard?: number
 ): BaccaratHand {
   const initialValue = calculateHandValue(initialCards);
-  let finalCards = [...initialCards];
+  const finalCards = [...initialCards];
   let drewThirdCard = false;
 
   const shouldDraw = isPlayer
@@ -22,10 +22,10 @@ export function evaluateHand(
   const finalValue = calculateHandValue(finalCards);
 
   return {
-    cards: finalCards,
-    initialValue,
-    finalValue,
-    hasNatural: hasNatural(initialValue),
-    drewThirdCard
+    initialCards,
+    value: finalValue,
+    thirdCard: drewThirdCard ? finalCards[2] : undefined,
+    cards: finalCards,  // 後方互換性のために残す
+    total: finalValue   // 後方互換性のために残す
   };
 }

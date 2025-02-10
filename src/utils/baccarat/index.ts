@@ -1,21 +1,30 @@
+// Hand evaluation
 export {
   calculateHandValue,
   isNatural
 } from './core/handValue';
 
+// Game logic
 export {
   calculateBaccaratResult,
-  getUsedCardsCount
+  getUsedCardsCount,
+  shouldPlayerDraw,
+  shouldBankerDraw
 } from './core/gameLogic';
 
+// Card position
 export {
   isFifthCardPlayer,
   isSixthCardPlayer
 } from './core/cardPosition';
 
+// Constants
 export {
-  shouldPlayerDraw,
-  shouldBankerDraw
-} from './drawingRules';
+  NATURAL_THRESHOLD,
+  PLAYER_DRAW_THRESHOLD,
+  BANKER_MANDATORY_DRAW,
+  MAX_HAND_VALUE
+} from './core/constants';
 
-export type { GameResult } from './types';
+// Types
+export type { GameResult, BaccaratGame, BaccaratHand } from './types';

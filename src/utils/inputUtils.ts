@@ -46,7 +46,7 @@ export function deleteCharacter(
     }
   }
 
-  let newCursor = { ...cursor };
+  const newCursor = { ...cursor };
   if (isBackspace && cursorPosition > 0) {
     if (cursor.x > 0) {
       newCursor.x--;
@@ -67,7 +67,7 @@ export function insertCharacter(
   char: string,
   cursor: Position,
   isRed: boolean,
-  isBold: boolean = false
+  isBold = false
 ): [GridData, Position] {
   if (!char.trim()) return [grid, cursor];
 
@@ -100,7 +100,7 @@ export function insertCharacter(
     }
   }
 
-  let newCursor = { ...cursor };
+  const newCursor = { ...cursor };
   if (cursor.x < GRID_COLS - 1) {
     newCursor.x++;
   } else if (cursor.y < GRID_ROWS - 1) {

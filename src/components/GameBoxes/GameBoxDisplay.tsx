@@ -4,7 +4,8 @@ import { ResultDisplay } from './ResultDisplay';
 import { NumberCircles } from './NumberCircles';
 import { checkColorMismatch } from '../../utils/colorUtils';
 import { AlertTriangle } from 'lucide-react';
-import { getFinalHandValues } from '../../utils/baccarat/gameEvaluator';
+import { calculateBaccaratResult } from '../../utils/baccarat/core/gameLogic';
+import { calculateHandValue } from '../../utils/baccarat/core/handValue';
 
 interface GameBoxDisplayProps {
   box: GameBox;
@@ -14,8 +15,8 @@ interface GameBoxDisplayProps {
 
 export function GameBoxDisplay({ box, isSelected, onSelect }: GameBoxDisplayProps) {
   const hasMismatch = checkColorMismatch(box.numbers, box.colors, box.id);
-  const finalValues = box.activeResult === 'Draw' && box.numbers ? getFinalHandValues(box.numbers) : null;
-  const drawValue = finalValues ? finalValues.playerFinal : undefined; // Draw時は必ずプレイヤーとバンカーの値は同じ
+  const result = box.numbers ? calculateBaccaratResult(box.numbers) : null;
+  const drawValue = result === 'Draw' && box.numbers ? calculateHandValue([box.numbers[0], box.numbers[2]]) : undefined;
 
   return (
     <div
@@ -41,14 +42,14 @@ export function GameBoxDisplay({ box, isSelected, onSelect }: GameBoxDisplayProp
         </span>
       </div>
       <ResultDisplay 
-        result={box.activeResult} 
+        result={result} 
         isActive={box.isActive} 
         numbers={drawValue !== undefined ? [drawValue] : undefined}
       />
       <NumberCircles 
         numbers={box.numbers} 
         colors={box.colors} 
-        result={box.activeResult}
+        result={result}
       />
     </div>
   );
