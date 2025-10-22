@@ -7,7 +7,7 @@ import { checkColorMismatch } from '../../utils/colorUtils';
 import { AlertTriangle } from 'lucide-react';
 import { calculateBaccaratResult } from '../../utils/baccarat/core/gameLogic';
 import { calculateHandValue } from '../../utils/baccarat/core/handValue';
-import { getWarningMessages, hasWarnings } from '../../utils/baccarat';
+import { hasWarnings } from '../../utils/baccarat';
 
 interface GameBoxDisplayProps {
   box: GameBox;
@@ -30,7 +30,6 @@ export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor, sett
   } : undefined;
   
   const showWarnings = filteredWarnings && hasWarnings(filteredWarnings);
-  const warningMessages = showWarnings ? getWarningMessages(filteredWarnings!) : [];
 
   return (
     <div
@@ -42,23 +41,40 @@ export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor, sett
         bg-black text-green-500
       `}
     >
-      {hasMismatch && (
-        <div className="absolute top-2 right-2 text-red-500 flex items-center gap-1">
-          <AlertTriangle className="w-4 h-4" />
-        </div>
-      )}
+      {/* PP, BP を左側に固定表示 */}
       {showWarnings && (
-        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-          {warningMessages.map((msg, idx) => (
-            <span 
-              key={idx}
-              className="bg-yellow-600 text-black text-xs font-bold px-1.5 py-0.5 rounded"
-            >
-              {msg}
-            </span>
-          ))}
+        <div className="absolute top-2 left-2">
+          {/* PP固定位置 */}
+          <div className="h-5 mb-1">
+            {filteredWarnings?.playerPair && (
+              <span className="bg-yellow-600 text-black text-xs font-bold px-1.5 py-0.5 rounded">
+                PP
+              </span>
+            )}
+          </div>
+          {/* BP固定位置 */}
+          <div className="h-5">
+            {filteredWarnings?.bankerPair && (
+              <span className="bg-yellow-600 text-black text-xs font-bold px-1.5 py-0.5 rounded">
+                BP
+              </span>
+            )}
+          </div>
         </div>
       )}
+      {/* B6 を右側に固定表示 */}
+      <div className="absolute top-2 right-2 flex flex-col gap-1">
+        {hasMismatch && (
+          <div className="text-red-500 flex items-center justify-center">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+        )}
+        {filteredWarnings?.bankerSixWin && (
+          <span className="bg-yellow-600 text-black text-xs font-bold px-1.5 py-0.5 rounded">
+            B6
+          </span>
+        )}
+      </div>
       <div className="flex items-center justify-center mb-2 sm:mb-3">
         <span className="text-sm sm:text-base font-bold text-green-400">
           {box.label}
