@@ -8,6 +8,7 @@ import { AlertTriangle } from 'lucide-react';
 import { calculateBaccaratResult } from '../../utils/baccarat/core/gameLogic';
 import { calculateHandValue } from '../../utils/baccarat/core/handValue';
 import { hasWarnings } from '../../utils/baccarat';
+import { shouldPlayerDraw, getUsedCardsCount } from '../../utils/baccarat';
 
 interface GameBoxDisplayProps {
   box: GameBox;
@@ -20,7 +21,20 @@ interface GameBoxDisplayProps {
 export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor, settings }: GameBoxDisplayProps) {
   const hasMismatch = checkColorMismatch(box.numbers, box.colors, box.id, referenceColor);
   const result = box.numbers ? calculateBaccaratResult(box.numbers) : null;
-  const drawValue = result === 'Draw' && box.numbers ? calculateHandValue([box.numbers[0], box.numbers[2]]) : undefined;
+  
+  // drawの場合の値を計算（使用カード枚数に応じて正しく計算）
+  let drawValue: number | undefined;
+  if (result === 'Draw' && box.numbers && box.numbers.length >= 4) {
+    const playerInitial = calculateHandValue([box.numbers[0], box.numbers[2]]);
+    const usedCards = getUsedCardsCount(box.numbers);
+    
+    // プレイヤーが3枚目を引いた場合（5枚または6枚使用）
+    if (usedCards >= 5 && shouldPlayerDraw(playerInitial)) {
+      drawValue = calculateHandValue([box.numbers[0], box.numbers[2], box.numbers[4]]);
+    } else {
+      drawValue = playerInitial;
+    }
+  }
   
   // 設定に基づいて警告をフィルタリング
   const filteredWarnings = box.warnings ? {
