@@ -4,7 +4,7 @@ import { GAME_BOXES } from '../../constants/gameBoxes';
 import { GameBoxDisplay } from './GameBoxDisplay';
 import { Position, GridData } from '../../types';
 import { getNumbersFromGrid } from '../../utils/gridUtils';
-import { calculateBaccaratResult, getUsedCardsCount } from '../../utils/baccarat';
+import { calculateBaccaratResult, getUsedCardsCount, checkBaccaratWarnings } from '../../utils/baccarat';
 
 interface GameBoxesContainerProps {
   grid: GridData;
@@ -23,6 +23,7 @@ function updateGameBox(
 ): GameBox {
   const [numbers, colors] = getNumbersFromGrid(grid, referencePoint, box.id);
   const result = numbers.length >= 4 ? calculateBaccaratResult(numbers) : null;
+  const warnings = numbers.length >= 4 ? checkBaccaratWarnings(numbers) : undefined;
   
   return {
     ...box,
@@ -30,6 +31,7 @@ function updateGameBox(
     colors,
     activeResult: result,
     isActive: numbers.length >= 4,
+    warnings,
   };
 }
 

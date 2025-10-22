@@ -1,6 +1,6 @@
 import { BaccaratHand } from './types';
-import { calculateHandValue } from './cardUtils';
-import { shouldPlayerDraw, shouldBankerDraw } from './drawingRules';
+import { calculateHandValue } from './core/handValue';
+import { shouldPlayerDraw, shouldBankerDraw } from './core/gameLogic';
 
 export function evaluateHand(
   initialCards: number[],

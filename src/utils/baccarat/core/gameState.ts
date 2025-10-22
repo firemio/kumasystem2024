@@ -1,12 +1,12 @@
 import { BaccaratHand, BaccaratGame } from '../types';
 import { calculateHandValue } from './handValue';
-import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
+import { shouldPlayerDraw, shouldBankerDraw } from './gameLogic';
 import { NATURAL_THRESHOLD } from './constants';
 import { determineWinner } from './gameResult';
 import { getRequiredCardsCount } from './gameLogic';
 
 function isNaturalValue(value: number): boolean {
-  return value >= NATURAL_MIN;
+  return value >= NATURAL_THRESHOLD;
 }
 
 export function evaluateGame(numbers: number[]): BaccaratGame | null {

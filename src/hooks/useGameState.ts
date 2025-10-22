@@ -21,10 +21,15 @@ export function useGameState() {
     setPosition(newPosition);
   };
 
-  const advanceGame = (offset: number) => {
+  const advanceGame = (offset: number): Position => {
     setGameNumber(prev => prev + 1);
-    setPosition(prev => calculateNewPosition(prev, offset));
+    let newPos: Position = position;
+    setPosition(prev => {
+      newPos = calculateNewPosition(prev, offset);
+      return newPos;
+    });
     setSelectedBox(null); // 選択状態をリセット
+    return newPos;
   };
 
   return {

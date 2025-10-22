@@ -1,9 +1,10 @@
 import { Position } from '../types';
 import { GRID_COLS, GRID_ROWS } from '../constants/grid';
+import { scrollToCursor } from './scrollUtils';
 
 export function moveCursor(
   direction: 'left' | 'right' | 'up' | 'down',
-  currentPosition: Position,
+  _currentPosition: Position,
   setCursor: (value: React.SetStateAction<Position>) => void,
 ) {
   setCursor(prev => {
@@ -35,6 +36,9 @@ export function moveCursor(
         break;
     }
 
-    return { x: newX, y: newY };
+    const newPosition = { x: newX, y: newY };
+    // カーソル移動後にスクロール
+    scrollToCursor(newPosition);
+    return newPosition;
   });
 }

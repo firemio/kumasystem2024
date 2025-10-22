@@ -26,5 +26,14 @@ export {
   MAX_HAND_VALUE
 } from './core/constants';
 
+// Warnings
+export {
+  checkBaccaratWarnings,
+  hasWarnings,
+  getWarningMessages,
+  getWarningFullNames
+} from './warnings';
+export type { BaccaratWarnings } from './warnings';
+
 // Types
 export type { GameResult, BaccaratGame, BaccaratHand } from './types';

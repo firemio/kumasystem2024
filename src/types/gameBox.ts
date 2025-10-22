@@ -1,5 +1,5 @@
 export type GameBoxType = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
-export type GameResult = 'Banker' | 'Player' | 'Draw';
+export type GameResult = 'Player' | 'Banker' | 'Draw';
 
 export interface GameBox {
   id: GameBoxType;
@@ -9,6 +9,11 @@ export interface GameBox {
   colors: boolean[];
   activeResult: GameResult | null;
   isActive: boolean;
+  warnings?: {
+    bankerSixWin: boolean;
+    playerPair: boolean;
+    bankerPair: boolean;
+  };
 }
 
 export interface GameBoxConfig {

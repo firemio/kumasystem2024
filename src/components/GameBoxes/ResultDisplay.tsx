@@ -10,7 +10,7 @@ interface ResultDisplayProps {
 export function ResultDisplay({ result, isActive, numbers }: ResultDisplayProps) {
   return (
     <div className="flex items-center justify-center w-full mb-2 gap-4 relative">
-      {['Banker', 'Player', 'Draw'].map((type) => (
+      {['Player', 'Banker', 'Draw'].map((type) => (
         <span
           key={type}
           className={`

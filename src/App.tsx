@@ -13,6 +13,7 @@ import { Position, GridData, ColorMode } from './types';
 import { GameBoxType } from './types/gameBox';
 import { INITIAL_GRID, DEFAULT_START_POSITION } from './constants/grid';
 import { countInputNumbers } from './utils/gridUtils';
+import { scrollToCursor } from './utils/scrollUtils';
 import * as handlers from './handlers/inputHandlers';
 
 export default function App() {
@@ -45,13 +46,18 @@ export default function App() {
 
   const handleBoxSelect = (boxId: GameBoxType, usedCards: number) => {
     if (referencePoint && usedCards > 0) {
-      advanceGame(usedCards);
+      const newPosition = advanceGame(usedCards);
+      // カーソルも新しい位置に移動
+      setCursor(newPosition);
       toast.success(`${boxId}の結果を確認しました`, {
         duration: 2000,
         position: 'top-center',
         className: 'bg-green-900 text-green-400 border border-green-500',
       });
+      // 新しい位置にスクロール
+      scrollToCursor(newPosition);
     }
+    setTimeout(focus, 0);
   };
 
   const handleReset = () => {
@@ -59,6 +65,7 @@ export default function App() {
     setCursor({ x: DEFAULT_START_POSITION, y: 0 });
     setColorMode('black');
     resetGameState();
+    scrollToCursor({ x: DEFAULT_START_POSITION, y: 0 });
     setTimeout(focus, 0);
   };
 
@@ -78,7 +85,10 @@ export default function App() {
               grid={grid}
               cursor={cursor}
               referencePoint={referencePoint}
-              onCellClick={(x, y) => handlers.handleCellClick(x, y, grid, setCursor)}
+              onCellClick={(x, y) => {
+                handlers.handleCellClick(x, y, grid, setCursor);
+                setTimeout(focus, 0);
+              }}
             />
           </div>
           <StatusDisplay gameNumber={gameNumber} position={referencePoint} />
@@ -97,13 +107,34 @@ export default function App() {
         onToggle={() => setIsNumpadVisible(prev => !prev)} 
       />
       <VirtualNumpad
-        onNumberPress={(num) => handlers.handleNumberPress(num, grid, cursor, colorMode, setGrid, setCursor)}
-        onArrowPress={(direction) => handlers.handleArrowPress(direction, cursor, setCursor)}
-        onDelete={() => handlers.handleDelete(grid, cursor, setGrid, setCursor)}
-        onBackspace={() => handlers.handleBackspace(grid, cursor, setGrid, setCursor)}
-        onEnter={() => setReferencePoint(cursor)}
-        onColorToggle={() => handlers.handleColorToggle(setColorMode)}
-        onSpecialChar={(char) => handlers.handleSpecialChar(char, grid, cursor, colorMode, setGrid, setCursor)}
+        onNumberPress={(num) => {
+          handlers.handleNumberPress(num, grid, cursor, colorMode, setGrid, setCursor);
+          setTimeout(focus, 0);
+        }}
+        onArrowPress={(direction) => {
+          handlers.handleArrowPress(direction, cursor, setCursor);
+          setTimeout(focus, 0);
+        }}
+        onDelete={() => {
+          handlers.handleDelete(grid, cursor, setGrid, setCursor);
+          setTimeout(focus, 0);
+        }}
+        onBackspace={() => {
+          handlers.handleBackspace(grid, cursor, setGrid, setCursor);
+          setTimeout(focus, 0);
+        }}
+        onEnter={() => {
+          setReferencePoint(cursor);
+          setTimeout(focus, 0);
+        }}
+        onColorToggle={() => {
+          handlers.handleColorToggle(setColorMode);
+          setTimeout(focus, 0);
+        }}
+        onSpecialChar={(char) => {
+          handlers.handleSpecialChar(char, grid, cursor, colorMode, setGrid, setCursor);
+          setTimeout(focus, 0);
+        }}
         colorMode={colorMode}
         isVisible={isNumpadVisible}
       />

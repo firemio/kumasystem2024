@@ -1,6 +1,6 @@
 import { GameResult } from '../types';
 import { calculateHandValue } from './handValue';
-import { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
+import { shouldPlayerDraw, shouldBankerDraw } from './gameLogic';
 
 function getRequiredCardsCount(numbers: number[]): number {
   if (!numbers || numbers.length < 4) return 0;
@@ -58,4 +58,4 @@ export function getUsedCardsCount(numbers: number[]): number {
 }
 
 export { calculateHandValue } from './handValue';
-export { shouldPlayerDraw, shouldBankerDraw } from '../drawingRules';
+export { shouldPlayerDraw, shouldBankerDraw } from './gameLogic';

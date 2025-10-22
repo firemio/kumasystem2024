@@ -6,6 +6,7 @@ import { checkColorMismatch } from '../../utils/colorUtils';
 import { AlertTriangle } from 'lucide-react';
 import { calculateBaccaratResult } from '../../utils/baccarat/core/gameLogic';
 import { calculateHandValue } from '../../utils/baccarat/core/handValue';
+import { getWarningMessages, hasWarnings } from '../../utils/baccarat';
 
 interface GameBoxDisplayProps {
   box: GameBox;
@@ -18,6 +19,8 @@ export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor }: Ga
   const hasMismatch = checkColorMismatch(box.numbers, box.colors, box.id, referenceColor);
   const result = box.numbers ? calculateBaccaratResult(box.numbers) : null;
   const drawValue = result === 'Draw' && box.numbers ? calculateHandValue([box.numbers[0], box.numbers[2]]) : undefined;
+  const showWarnings = box.warnings && hasWarnings(box.warnings);
+  const warningMessages = showWarnings ? getWarningMessages(box.warnings!) : [];
 
   return (
     <div
@@ -32,6 +35,18 @@ export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor }: Ga
       {hasMismatch && (
         <div className="absolute top-2 right-2 text-red-500 flex items-center gap-1">
           <AlertTriangle className="w-4 h-4" />
+        </div>
+      )}
+      {showWarnings && (
+        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+          {warningMessages.map((msg, idx) => (
+            <span 
+              key={idx}
+              className="bg-yellow-600 text-black text-xs font-bold px-1.5 py-0.5 rounded"
+            >
+              {msg}
+            </span>
+          ))}
         </div>
       )}
       <div className="flex items-center justify-center mb-2 sm:mb-3">

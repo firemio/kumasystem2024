@@ -43,12 +43,15 @@ export function useKeyboardInput({
           cursor,
           setCursor
         );
+        setTimeout(focus, 0);
         break;
       case 'Enter':
         setReferencePoint(cursor);
+        setTimeout(focus, 0);
         break;
       case '*':
         handlers.handleColorToggle(setColorMode);
+        setTimeout(focus, 0);
         break;
       case 'Backspace':
       case 'Delete':
@@ -57,17 +60,20 @@ export function useKeyboardInput({
         } else {
           handlers.handleDelete(grid, cursor, setGrid, setCursor);
         }
+        setTimeout(focus, 0);
         break;
       case '/':
       case '-':
         handlers.handleSpecialChar(e.key, grid, cursor, colorMode, setGrid, setCursor);
+        setTimeout(focus, 0);
         break;
       default:
         if (/^[0-9]$/.test(e.key)) {
           handlers.handleNumberPress(e.key, grid, cursor, colorMode, setGrid, setCursor);
+          setTimeout(focus, 0);
         }
     }
-  }, [cursor, setCursor, setGrid, setReferencePoint, colorMode, setColorMode, grid]);
+  }, [cursor, setCursor, setGrid, setReferencePoint, colorMode, setColorMode, grid, focus]);
 
   useEffect(() => {
     const element = containerRef.current;
