@@ -27,14 +27,12 @@ export function checkBaccaratWarnings(numbers: number[]): BaccaratWarnings {
   const result = calculateBaccaratResult(numbers);
   
   // プレイヤーペアのチェック（numbers[0]とnumbers[2]が同じ数字）
-  const playerCard1 = numbers[0] === 0 ? 0 : numbers[0];
-  const playerCard2 = numbers[2] === 0 ? 0 : numbers[2];
-  warnings.playerPair = playerCard1 === playerCard2;
+  // 10（P）も含めて比較
+  warnings.playerPair = numbers[0] === numbers[2];
 
   // バンカーペアのチェック（numbers[1]とnumbers[3]が同じ数字）
-  const bankerCard1 = numbers[1] === 0 ? 0 : numbers[1];
-  const bankerCard2 = numbers[3] === 0 ? 0 : numbers[3];
-  warnings.bankerPair = bankerCard1 === bankerCard2;
+  // 10（P）も含めて比較
+  warnings.bankerPair = numbers[1] === numbers[3];
 
   // Bankerが6で勝つかチェック
   if (result === 'Banker') {

@@ -49,7 +49,8 @@ export function getNumbersFromGrid(
           continue;
         }
         
-        const numValue = cell.value === '-' ? 0 : parseInt(cell.value, 10);
+        // '-'(P)を10として扱い、0と区別する
+        const numValue = cell.value === '-' ? 10 : parseInt(cell.value, 10);
         numbers.push(numValue);
         colors.push(cell.isRed);
       }

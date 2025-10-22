@@ -34,7 +34,7 @@ export function NumberCircles({ numbers = [], colors = [], result }: NumberCircl
           )}
           <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border flex items-center justify-center border-green-500 bg-black">
             <span className={`text-xs sm:text-sm font-medium ${colors[index] ? 'text-red-500' : 'text-green-400'}`}>
-              {number}
+              {number === 10 ? 'P' : number}
             </span>
           </div>
         </div>

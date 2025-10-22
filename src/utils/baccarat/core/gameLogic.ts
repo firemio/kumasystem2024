@@ -22,16 +22,19 @@ export function shouldBankerDraw(
     return bankerValue <= 5;  // バンカーは5以下なら引く
   }
 
+  // 10（P）は0として扱う
+  const cardValue = playerThirdCard === 10 ? 0 : playerThirdCard;
+
   // 4. プレイヤーの3枚目の値によってバンカーの引くルールが変わる
   switch (bankerValue) {
     case 3:  // バンカーが3の場合、プレイヤーの3枚目が8以外なら引く
-      return playerThirdCard !== 8;
+      return cardValue !== 8;
     case 4:  // バンカーが4の場合、プレイヤーの3枚目が2-7なら引く
-      return playerThirdCard >= 2 && playerThirdCard <= 7;
+      return cardValue >= 2 && cardValue <= 7;
     case 5:  // バンカーが5の場合、プレイヤーの3枚目が4-7なら引く
-      return playerThirdCard >= 4 && playerThirdCard <= 7;
+      return cardValue >= 4 && cardValue <= 7;
     case 6:  // バンカーが6の場合、プレイヤーの3枚目が6,7なら引く
-      return playerThirdCard === 6 || playerThirdCard === 7;
+      return cardValue === 6 || cardValue === 7;
     default:
       return false;
   }
@@ -40,11 +43,8 @@ export function shouldBankerDraw(
 export function getRequiredCardsCount(numbers: number[]): number {
   if (!numbers || numbers.length < 4) return 0;
 
-  // Convert P (represented as 0) to actual 0 for calculations
-  const processedNumbers = numbers.map(n => n === 0 ? 0 : n);
-
-  const playerValue = calculateHandValue([processedNumbers[0], processedNumbers[2]]);
-  const bankerValue = calculateHandValue([processedNumbers[1], processedNumbers[3]]);
+  const playerValue = calculateHandValue([numbers[0], numbers[2]]);
+  const bankerValue = calculateHandValue([numbers[1], numbers[3]]);
 
   // Natural 8 or 9
   if (isNatural(playerValue) || isNatural(bankerValue)) {
@@ -53,7 +53,7 @@ export function getRequiredCardsCount(numbers: number[]): number {
 
   // Check if player should draw
   if (shouldPlayerDraw(playerValue)) {
-    if (shouldBankerDraw(bankerValue, processedNumbers[4])) {
+    if (shouldBankerDraw(bankerValue, numbers[4])) {
       return 6;
     }
     return 5;
