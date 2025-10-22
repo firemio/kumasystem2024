@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameBox } from '../../types/gameBox';
+import { GameSettings } from '../../types/settings';
 import { ResultDisplay } from './ResultDisplay';
 import { NumberCircles } from './NumberCircles';
 import { checkColorMismatch } from '../../utils/colorUtils';
@@ -13,14 +14,23 @@ interface GameBoxDisplayProps {
   isSelected: boolean;
   onSelect: () => void;
   referenceColor?: boolean;
+  settings: GameSettings;
 }
 
-export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor }: GameBoxDisplayProps) {
+export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor, settings }: GameBoxDisplayProps) {
   const hasMismatch = checkColorMismatch(box.numbers, box.colors, box.id, referenceColor);
   const result = box.numbers ? calculateBaccaratResult(box.numbers) : null;
   const drawValue = result === 'Draw' && box.numbers ? calculateHandValue([box.numbers[0], box.numbers[2]]) : undefined;
-  const showWarnings = box.warnings && hasWarnings(box.warnings);
-  const warningMessages = showWarnings ? getWarningMessages(box.warnings!) : [];
+  
+  // 設定に基づいて警告をフィルタリング
+  const filteredWarnings = box.warnings ? {
+    bankerSixWin: box.warnings.bankerSixWin && settings.warnings.bankerSixWin,
+    playerPair: box.warnings.playerPair && settings.warnings.playerPair,
+    bankerPair: box.warnings.bankerPair && settings.warnings.bankerPair,
+  } : undefined;
+  
+  const showWarnings = filteredWarnings && hasWarnings(filteredWarnings);
+  const warningMessages = showWarnings ? getWarningMessages(filteredWarnings!) : [];
 
   return (
     <div

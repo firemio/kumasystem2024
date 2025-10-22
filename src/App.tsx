@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { Grid } from './components/Grid';
 import { Header } from './components/Header';
@@ -6,11 +6,13 @@ import { StatusDisplay } from './components/StatusDisplay';
 import { GameBoxesContainer } from './components/GameBoxes';
 import { ResetButton } from './components/ResetButton';
 import { VirtualNumpad, NumpadToggle } from './components/VirtualNumpad';
+import { SettingsToggle, SettingsModal } from './components/Settings';
 import { usePersistedState } from './hooks/usePersistedState';
 import { useGameState } from './hooks/useGameState';
 import { useKeyboardInput } from './hooks/useKeyboardInput';
 import { Position, GridData, ColorMode } from './types';
 import { GameBoxType } from './types/gameBox';
+import { GameSettings, DEFAULT_SETTINGS } from './types/settings';
 import { INITIAL_GRID, DEFAULT_START_POSITION } from './constants/grid';
 import { countInputNumbers } from './utils/gridUtils';
 import { scrollToCursor } from './utils/scrollUtils';
@@ -22,6 +24,8 @@ export default function App() {
   const [cursor, setCursor] = usePersistedState<Position>('baccarat-cursor', { x: DEFAULT_START_POSITION, y: 0 });
   const [colorMode, setColorMode] = usePersistedState<ColorMode>('baccarat-color-mode', 'black');
   const [isNumpadVisible, setIsNumpadVisible] = usePersistedState<boolean>('baccarat-numpad-visible', true);
+  const [settings, setSettings] = usePersistedState<GameSettings>('baccarat-settings', DEFAULT_SETTINGS);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const {
     position: referencePoint,
@@ -99,12 +103,20 @@ export default function App() {
             gameNumber={gameNumber}
             selectedBox={selectedBox}
             setSelectedBox={setSelectedBox}
+            settings={settings}
           />
         </div>
       </div>
       <NumpadToggle 
         isVisible={isNumpadVisible} 
         onToggle={() => setIsNumpadVisible(prev => !prev)} 
+      />
+      <SettingsToggle onClick={() => setIsSettingsOpen(true)} />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onSettingsChange={setSettings}
       />
       <VirtualNumpad
         onNumberPress={(num) => {

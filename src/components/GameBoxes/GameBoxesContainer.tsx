@@ -3,6 +3,7 @@ import { GameBox, GameBoxType } from '../../types/gameBox';
 import { GAME_BOXES } from '../../constants/gameBoxes';
 import { GameBoxDisplay } from './GameBoxDisplay';
 import { Position, GridData } from '../../types';
+import { GameSettings } from '../../types/settings';
 import { getNumbersFromGrid } from '../../utils/gridUtils';
 import { calculateBaccaratResult, getUsedCardsCount, checkBaccaratWarnings } from '../../utils/baccarat';
 
@@ -13,6 +14,7 @@ interface GameBoxesContainerProps {
   gameNumber: number;
   selectedBox: string | null;
   setSelectedBox: (box: string | null) => void;
+  settings: GameSettings;
 }
 
 // ゲームボックスの更新ロジックを分離
@@ -41,7 +43,8 @@ export function GameBoxesContainer({
   onBoxSelect,
   gameNumber,
   selectedBox,
-  setSelectedBox
+  setSelectedBox,
+  settings
 }: GameBoxesContainerProps) {
   const [gameBoxes, setGameBoxes] = useState<GameBox[]>(
     GAME_BOXES.map(config => ({
@@ -85,28 +88,33 @@ export function GameBoxesContainer({
   // 基準点の色情報を取得
   const referenceColor = referencePoint ? grid[referencePoint.y][referencePoint.x].isRed : undefined;
 
+  // 設定に基づいてボックスをフィルタリング（Aは常に表示）
+  const filteredBoxes = gameBoxes.filter(box => box.id === 'A' || settings.gameBoxes[box.id]);
+
   return (
     <div className="mt-4 space-y-2">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {gameBoxes.slice(0, 4).map((box) => (
+        {filteredBoxes.slice(0, 4).map((box) => (
           <div key={box.id}>
             <GameBoxDisplay
               box={box}
               isSelected={selectedBox === box.id}
               onSelect={() => handleBoxSelect(box.id)}
               referenceColor={referenceColor}
+              settings={settings}
             />
           </div>
         ))}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {gameBoxes.slice(4).map((box) => (
+        {filteredBoxes.slice(4).map((box) => (
           <div key={box.id}>
             <GameBoxDisplay
               box={box}
               isSelected={selectedBox === box.id}
               onSelect={() => handleBoxSelect(box.id)}
               referenceColor={referenceColor}
+              settings={settings}
             />
           </div>
         ))}
