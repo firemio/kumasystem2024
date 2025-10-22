@@ -43,9 +43,9 @@ export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor, sett
     >
       {/* PP, BP を左側に固定表示 */}
       {showWarnings && (
-        <div className="absolute top-2 left-2">
+        <div className="absolute top-2 left-2 flex gap-1">
           {/* PP固定位置 */}
-          <div className="h-5 mb-1">
+          <div className="w-8">
             {filteredWarnings?.playerPair && (
               <span className="bg-yellow-600 text-black text-xs font-bold px-1.5 py-0.5 rounded">
                 PP
@@ -53,7 +53,7 @@ export function GameBoxDisplay({ box, isSelected, onSelect, referenceColor, sett
             )}
           </div>
           {/* BP固定位置 */}
-          <div className="h-5">
+          <div className="w-8">
             {filteredWarnings?.bankerPair && (
               <span className="bg-yellow-600 text-black text-xs font-bold px-1.5 py-0.5 rounded">
                 BP
