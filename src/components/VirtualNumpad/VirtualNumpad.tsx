@@ -37,10 +37,10 @@ export function VirtualNumpad({
     return `
       w-full aspect-square
       sm:w-16 sm:h-16 sm:aspect-auto
-      flex items-center justify-center rounded-lg
-      border-2 border-green-500 ${textColor}
+      flex items-center justify-center rounded
+      border border-green-500 ${textColor}
       ${hoverColor} ${activeColor}
-      transition-colors font-medium text-lg sm:text-xl
+      transition-colors font-medium text-sm sm:text-xl
       touch-manipulation
     `;
   };
@@ -48,28 +48,28 @@ export function VirtualNumpad({
   const buttonClass = getButtonClass();
 
   return (
-    <div className="fixed bottom-4 right-4 left-4 sm:left-auto bg-black border-2 border-green-500 rounded-xl p-2 sm:p-4 shadow-lg">
-      <div className="grid grid-cols-4 gap-1.5 sm:gap-2 max-w-md mx-auto">
+    <div className="fixed bottom-2 right-2 left-2 sm:left-auto sm:bottom-4 sm:right-4 bg-black border-2 border-green-500 rounded-xl p-1.5 sm:p-4 shadow-lg">
+      <div className="grid grid-cols-4 gap-1 sm:gap-2 max-w-sm sm:max-w-md mx-auto">
         {/* Navigation Controls */}
-        <div className="col-span-4 grid grid-cols-3 gap-1.5 sm:gap-2 mb-2">
+        <div className="col-span-4 grid grid-cols-3 gap-1 sm:gap-2 mb-1 sm:mb-2">
           <button className={buttonClass} onClick={() => onArrowPress('left')}>
-            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ArrowLeft className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
-          <div className="grid grid-rows-2 gap-1.5 sm:gap-2">
+          <div className="grid grid-rows-2 gap-1 sm:gap-2">
             <button className={buttonClass} onClick={() => onArrowPress('up')}>
-              <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6" />
+              <ArrowUp className="w-4 h-4 sm:w-6 sm:h-6" />
             </button>
             <button className={buttonClass} onClick={() => onArrowPress('down')}>
-              <ArrowDown className="w-5 h-5 sm:w-6 sm:h-6" />
+              <ArrowDown className="w-4 h-4 sm:w-6 sm:h-6" />
             </button>
           </div>
           <button className={buttonClass} onClick={() => onArrowPress('right')}>
-            <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ArrowRight className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* Number Pad */}
-        <div className="col-span-4 grid grid-cols-3 gap-1.5 sm:gap-2">
+        <div className="col-span-4 grid grid-cols-3 gap-1 sm:gap-2">
           {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((num) => (
             <button
               key={num}
@@ -82,7 +82,7 @@ export function VirtualNumpad({
         </div>
 
         {/* Special Characters and 0 */}
-        <div className="col-span-4 grid grid-cols-3 gap-1.5 sm:gap-2">
+        <div className="col-span-4 grid grid-cols-3 gap-1 sm:gap-2">
           <button className={buttonClass} onClick={() => onSpecialChar('/')}>
             /
           </button>
@@ -95,7 +95,7 @@ export function VirtualNumpad({
         </div>
 
         {/* Function Keys */}
-        <div className="col-span-4 grid grid-cols-3 gap-1.5 sm:gap-2">
+        <div className="col-span-4 grid grid-cols-3 gap-1 sm:gap-2">
           <button
             className={getButtonClass(true)}
             onClick={onColorToggle}
@@ -103,10 +103,10 @@ export function VirtualNumpad({
             *
           </button>
           <button className={buttonClass} onClick={onBackspace}>
-            <Delete className="w-5 h-5 sm:w-6 sm:h-6" />
+            <Delete className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
           <button className={buttonClass} onClick={onEnter}>
-            <CornerDownLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+            <CornerDownLeft className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
         </div>
       </div>
