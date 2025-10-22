@@ -38,33 +38,34 @@ export function VirtualNumpad({
       w-full aspect-square
       sm:w-16 sm:h-16 sm:aspect-auto
       flex items-center justify-center rounded
-      border border-green-500 ${textColor}
+      border border-green-500/60 ${textColor}
       ${hoverColor} ${activeColor}
-      transition-colors font-medium text-sm sm:text-xl
-      touch-manipulation
+      transition-colors font-bold text-lg sm:text-xl
+      touch-manipulation select-none
+      min-h-0 bg-green-900/40
     `;
   };
 
   const buttonClass = getButtonClass();
 
   return (
-    <div className="fixed bottom-2 right-2 left-2 sm:left-auto sm:bottom-4 sm:right-4 bg-black border-2 border-green-500 rounded-xl p-1.5 sm:p-4 shadow-lg">
-      <div className="grid grid-cols-4 gap-1 sm:gap-2 max-w-sm sm:max-w-md mx-auto">
+    <div className="fixed bottom-0 right-0 left-0 sm:left-auto sm:bottom-4 sm:right-4 bg-green-950/90 border-2 border-green-500 rounded-t-lg sm:rounded-lg p-1 sm:p-4 shadow-lg scale-75 sm:scale-100 origin-bottom sm:origin-center">
+      <div className="grid grid-cols-4 gap-1 sm:gap-2 max-w-[260px] sm:max-w-md mx-auto">
         {/* Navigation Controls */}
         <div className="col-span-4 grid grid-cols-3 gap-1 sm:gap-2 mb-1 sm:mb-2">
           <button className={buttonClass} onClick={() => onArrowPress('left')}>
-            <ArrowLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+            <ArrowLeft className="w-6 h-6 sm:w-6 sm:h-6" />
           </button>
           <div className="grid grid-rows-2 gap-1 sm:gap-2">
             <button className={buttonClass} onClick={() => onArrowPress('up')}>
-              <ArrowUp className="w-4 h-4 sm:w-6 sm:h-6" />
+              <ArrowUp className="w-6 h-6 sm:w-6 sm:h-6" />
             </button>
             <button className={buttonClass} onClick={() => onArrowPress('down')}>
-              <ArrowDown className="w-4 h-4 sm:w-6 sm:h-6" />
+              <ArrowDown className="w-6 h-6 sm:w-6 sm:h-6" />
             </button>
           </div>
           <button className={buttonClass} onClick={() => onArrowPress('right')}>
-            <ArrowRight className="w-4 h-4 sm:w-6 sm:h-6" />
+            <ArrowRight className="w-6 h-6 sm:w-6 sm:h-6" />
           </button>
         </div>
 
@@ -103,10 +104,10 @@ export function VirtualNumpad({
             *
           </button>
           <button className={buttonClass} onClick={onBackspace}>
-            <Delete className="w-4 h-4 sm:w-6 sm:h-6" />
+            <Delete className="w-6 h-6 sm:w-6 sm:h-6" />
           </button>
           <button className={buttonClass} onClick={onEnter}>
-            <CornerDownLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+            <CornerDownLeft className="w-6 h-6 sm:w-6 sm:h-6" />
           </button>
         </div>
       </div>
